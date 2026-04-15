@@ -144,7 +144,7 @@
   <div class="tab-bar">
     <button class="tab-btn active" id="tab-trade" onclick="switchTab('trade')">📊 실거래 조회</button>
     <button class="tab-btn" id="tab-find" onclick="switchTab('find')">🔍 건물/토지 찾기</button>
-    <span class="tab-hint">실거래 조회: 최근 3개월 · 건물/토지 찾기: 건축물대장·지번 직접 조회</span>
+    <span class="tab-hint">실거래 조회: 최근 3개월 · 건물 찾기: 지번 직접 조회 · 토지: 개별공시지가 조회</span>
   </div>
 
   <!-- ════════════════════════════════════
@@ -237,7 +237,7 @@
           <input type="text" id="f-jibun" placeholder="예) 123 또는 123-45" disabled
             oninput="f_onJibunInput()" onkeydown="if(event.key==='Enter') f_lookupBldg()"/>
         </div>
-        <!-- 토지 전용: 리 + 번지 + 기간 -->
+        <!-- 토지 전용: 리 + 번지 -->
         <div id="f-step4-land" style="display:none">
           <div class="step-label"><span class="step-num" id="f-sn4l">4</span><span class="step-text" id="f-st4l">리(선택)</span></div>
           <select id="f-ri" onchange="f_onRiChange()" disabled>
@@ -245,19 +245,9 @@
           </select>
         </div>
         <div id="f-step5-land" style="display:none">
-          <div class="step-label"><span class="step-num" id="f-sn5l">5</span><span class="step-text" id="f-st5l">번지(선택)</span></div>
-          <input type="text" id="f-land-jibun" placeholder="예) 123 또는 123-45" disabled
+          <div class="step-label"><span class="step-num" id="f-sn5l">5</span><span class="step-text" id="f-st5l">번지</span></div>
+          <input type="text" id="f-land-jibun" placeholder="예) 36-15" disabled
             oninput="f_onLandJibunInput()" onkeydown="if(event.key==='Enter') f_lookupBldg()"/>
-        </div>
-        <div id="f-step6-land" style="display:none">
-          <div class="step-label"><span class="step-num" id="f-sn6l">6</span><span class="step-text" id="f-st6l">조회 기간</span></div>
-          <select id="f-land-period" onchange="f_onLandPeriodChange()" disabled>
-            <option value="">-- 기간 선택 --</option>
-            <option value="12">최근 1년</option>
-            <option value="36">최근 3년</option>
-            <option value="60">최근 5년</option>
-            <option value="120">최근 10년</option>
-          </select>
         </div>
         <div style="align-self:end">
           <div class="step-label" style="visibility:hidden"><span>ㅤ</span></div>
@@ -284,6 +274,32 @@
           </div>
           <button class="btn-search" id="f-btn" onclick="f_doSearch()" disabled>검색</button>
         </div>
+      </div>
+    </div>
+
+    <!-- 토지 공시지가 결과 -->
+    <div id="gongsi-section" style="display:none;margin-top:12px">
+      <div class="search-card" style="padding:20px 22px">
+        <div style="margin-bottom:12px;display:flex;align-items:center;gap:10px">
+          <span style="color:#60a5fa;font-weight:700;font-size:15px">📋 개별공시지가</span>
+          <span style="color:#4b6894;font-size:11px">국토교통부 vworld 기준</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
+          <select id="gongsi-year" style="width:90px">
+            <option value="2025">2025년</option>
+            <option value="2024">2024년</option>
+            <option value="2023">2023년</option>
+            <option value="2022">2022년</option>
+            <option value="2021">2021년</option>
+            <option value="2020">2020년</option>
+            <option value="2019">2019년</option>
+            <option value="2018">2018년</option>
+          </select>
+          <button class="btn-search" style="width:auto;padding:0 18px;font-size:13px" onclick="fetchGongsiJiga()">
+            재조회<span id="gongsi-spin" style="display:none" class="spin"></span>
+          </button>
+        </div>
+        <div id="gongsi-result"></div>
       </div>
     </div>
   </div>
@@ -437,9 +453,9 @@ const DONG_MAP = {
   "31170":[["남목동","10100"],["대송동","10200"],["동부동","10300"],["방어동","10400"],["서부동","10500"],["성내동","10600"],["일산동","10700"],["전하동","10800"],["주전동","10900"],["화정동","11000"]],
   "31200":[["구유동","10100"],["달천동","10200"],["당사동","10300"],["대안동","10400"],["명촌동","10500"],["산하동","10600"],["신현동","10700"],["어물동","10800"],["염포동","10900"],["용당동","11000"],["중산동","11100"],["진장동","11200"],["창평동","11300"],["천곡동","11400"],["화봉동","11500"]],
   "36110":[["가람동","10100"],["고운동","10200"],["금남면","10300"],["나성동","10400"],["다정동","10500"],["대평동","10600"],["도담동","10700"],["반곡동","10800"],["보람동","10900"],["부강면","11000"],["새롬동","11100"],["소담동","11200"],["아름동","11300"],["연기면","11400"],["연동면","11500"],["연서면","11600"],["장군면","11700"],["전동면","11800"],["전의면","11900"],["조치원읍","12000"],["종촌동","12100"],["집현동","12200"],["한솔동","12300"],["합강동","12400"]],
-  "42110":[["강남동","10100"],["근화동","10200"],["교동","10300"],["동면","10400"],["동내면","10500"],["동산면","10600"],["문화동","10700"],["사농동","10900"],["사우동","11000"],["석사동","11100"],["서면","11200"],["신북읍","11400"],["약사동","11500"],["우두동","11600"],["조운동","11700"],["중앙동","11800"],["칠전동","11900"],["퇴계동","12000"],["효자동","12100"],["후평동","12200"]],
-  "42150":[["강동면","10100"],["강문동","10200"],["경포동","10400"],["교동","10500"],["구정면","10600"],["남대천동","10700"],["내곡동","10800"],["노암동","10900"],["대전동","11000"],["성덕동","11100"],["신석동","11200"],["옥천동","11300"],["죽헌동","11500"],["주문진읍","11600"],["홍제동","11800"]],
-  "42210":[["교동","10100"],["금호동","10200"],["대포동","10300"],["도문동","10400"],["동명동","10500"],["설악동","10600"],["조양동","10700"],["중앙동","10800"],["청학동","10900"]],
+  "51110":[["강남동","10100"],["근화동","10200"],["교동","10300"],["동면","10400"],["동내면","10500"],["동산면","10600"],["문화동","10700"],["사농동","10900"],["사우동","11000"],["석사동","11100"],["서면","11200"],["신북읍","11400"],["약사동","11500"],["우두동","11600"],["조운동","11700"],["중앙동","11800"],["칠전동","11900"],["퇴계동","12000"],["효자동","12100"],["후평동","12200"]],
+  "51150":[["강동면","10100"],["강문동","10200"],["경포동","10400"],["교동","10500"],["구정면","10600"],["남대천동","10700"],["내곡동","10800"],["노암동","10900"],["대전동","11000"],["성덕동","11100"],["신석동","11200"],["옥천동","11300"],["죽헌동","11500"],["주문진읍","11600"],["홍제동","11800"]],
+  "51210":[["교동","10100"],["금호동","10200"],["대포동","10300"],["도문동","10400"],["동명동","10500"],["설악동","10600"],["조양동","10700"],["중앙동","10800"],["청학동","10900"]],
   "43111":[["금천동","10100"],["방서동","10400"],["사천동","10500"],["산성동","10600"],["서문동","10700"],["수동","10800"],["영동","10900"],["용담동","11000"],["운동동","11100"],["중앙동","11200"]],
   "43130":[["교현동","10200"],["달천동","10600"],["문화동","10900"],["목행동","10800"],["성내충인동","11100"],["용관동","11700"],["주덕읍","11800"],["충의동","12000"],["칠금금릉동","12100"],["호암직동","12200"]],
   "44131":[["구성동","10100"],["다가동","10200"],["문성동","10300"],["봉명동","10400"],["성황동","10500"],["신방동","10600"],["신부동","10700"],["쌍용동","10800"],["오룡동","10900"],["원성동","11000"],["청당동","11100"],["목천읍","11300"],["성남면","11400"]],
@@ -460,21 +476,21 @@ const DONG_MAP = {
   "50130":[["강정동","10100"],["남원읍","10200"],["대귀동","10300"],["대륜동","10400"],["대정읍","10500"],["동홍동","10600"],["서귀동","10700"],["서홍동","10800"],["성산읍","10900"],["송산동","11000"],["안덕면","11100"],["영천동","11200"],["예래동","11300"],["정방동","11400"],["중문동","11500"],["중앙동","11600"],["천지동","11700"],["표선면","11800"],["호근동","11900"],["효돈동","12000"]],
   "27710":[["가창면","10100"],["구지면","10200"],["논공읍","10300"],["다사읍","10400"],["옥포읍","10500"],["유가읍","10600"],["하빈면","10700"],["화원읍","10800"],["현풍읍","10900"]],
   "31710":[["강동면","10100"],["범서읍","10200"],["삼남읍","10300"],["상북면","10400"],["서생면","10500"],["언양읍","10600"],["온양읍","10700"],["웅촌면","10800"],["청량읍","10900"],["두서면","11000"],["두동면","11100"]],
-  "42170":[["동호동","10100"],["묵호동","10200"],["북삼동","10300"],["삼화동","10400"],["송정동","10500"],["이로동","10600"],["천곡동","10700"],["쌍용동","10800"]],
-  "42230":[["교동","10100"],["도계읍","10200"],["미로면","10300"],["사직동","10400"],["상장동","10500"],["원당동","10600"],["정라동","10700"],["조비면","10800"],["하장면","10900"]],
-  "42130":[["개운동","10100"],["관설동","10200"],["귀래면","10300"],["단계동","10400"],["단구동","10500"],["명륜동","10600"],["봉산동","10700"],["소초면","10800"],["신림면","10900"],["우산동","11000"],["원주동","11100"],["지정면","11200"],["판부면","11300"],["호저면","11400"],["흥업면","11500"],["반곡관설동","11600"],["행구동","11700"],["문막읍","11800"]],
-  "42190":[["금암동","10100"],["동점동","10200"],["문곡소도동","10300"],["삼수동","10400"],["상사미동","10500"],["장성동","10600"],["철암동","10700"],["통동","10800"],["황지동","10900"]],
-  "42820":[["거진읍","10100"],["간성읍","10200"],["죽왕면","10300"],["토성면","10400"],["현내면","10500"]],
-  "42780":[["남면","10100"],["동면","10200"],["방산면","10300"],["수입면","10400"],["양구읍","10500"],["인제면","10600"],["해안면","10700"]],
-  "42830":[["강현면","10100"],["서면","10200"],["손양면","10300"],["양양읍","10400"],["현북면","10500"],["현남면","10600"]],
-  "42750":[["김삿갓면","10100"],["남면","10200"],["무릉도원면","10300"],["북면","10400"],["산솔면","10500"],["상동읍","10600"],["서면","10700"],["영월읍","10800"],["주천면","10900"],["중동면","11000"],["한반도면","11100"]],
-  "42790":[["기린면","10100"],["남면","10200"],["북면","10300"],["상남면","10400"],["서화면","10500"],["인제읍","10600"]],
-  "42760":[["고한읍","10100"],["남면","10200"],["동면","10300"],["북평면","10400"],["사북읍","10500"],["신동읍","10600"],["여량면","10700"],["임계면","10800"],["정선읍","10900"],["화암면","11000"]],
-  "42770":[["갈말읍","10100"],["근남면","10200"],["근북면","10300"],["근동면","10400"],["동송읍","10500"],["서면","10600"],["철원읍","10700"],["김화읍","10800"],["원동면","10900"],["이길리면","11000"]],
-  "42740":[["개수면","10100"],["대관령면","10200"],["대화면","10300"],["도암면","10400"],["봉평면","10500"],["방림면","10600"],["용평면","10700"],["진부면","10800"],["평창읍","10900"]],
-  "42720":[["내면","10100"],["남면","10200"],["두촌면","10300"],["동면","10400"],["북방면","10500"],["서면","10600"],["서석면","10700"],["영귀미면","10800"],["홍천읍","10900"],["화촌면","11000"]],
-  "42800":[["간동면","10100"],["사내면","10200"],["상서면","10300"],["하남면","10400"],["화천읍","10500"]],
-  "42730":[["갑천면","10100"],["강림면","10200"],["공근면","10300"],["둔내면","10400"],["서원면","10500"],["안흥면","10600"],["우천면","10700"],["청일면","10800"],["횡성읍","10900"]],
+  "51170":[["동호동","10100"],["묵호동","10200"],["북삼동","10300"],["삼화동","10400"],["송정동","10500"],["이로동","10600"],["천곡동","10700"],["쌍용동","10800"]],
+  "51230":[["교동","10100"],["도계읍","10200"],["미로면","10300"],["사직동","10400"],["상장동","10500"],["원당동","10600"],["정라동","10700"],["조비면","10800"],["하장면","10900"]],
+  "51130":[["개운동","10100"],["관설동","10200"],["귀래면","10300"],["단계동","10400"],["단구동","10500"],["명륜동","10600"],["봉산동","10700"],["소초면","10800"],["신림면","10900"],["우산동","11000"],["원주동","11100"],["지정면","11200"],["판부면","11300"],["호저면","11400"],["흥업면","11500"],["반곡관설동","11600"],["행구동","11700"],["문막읍","11800"]],
+  "51190":[["금암동","10100"],["동점동","10200"],["문곡소도동","10300"],["삼수동","10400"],["상사미동","10500"],["장성동","10600"],["철암동","10700"],["통동","10800"],["황지동","10900"]],
+  "51820":[["거진읍","10100"],["간성읍","10200"],["죽왕면","10300"],["토성면","10400"],["현내면","10500"]],
+  "51800":[["남면","10100"],["동면","10200"],["방산면","10300"],["수입면","10400"],["양구읍","10500"],["인제면","10600"],["해안면","10700"]],
+  "51830":[["강현면","10100"],["서면","10200"],["손양면","10300"],["양양읍","10400"],["현북면","10500"],["현남면","10600"]],
+  "51750":[["김삿갓면","10100"],["남면","10200"],["무릉도원면","10300"],["북면","10400"],["산솔면","10500"],["상동읍","10600"],["서면","10700"],["영월읍","10800"],["주천면","10900"],["중동면","11000"],["한반도면","11100"]],
+  "51740":[["기린면","10100"],["남면","10200"],["북면","10300"],["상남면","10400"],["서화면","10500"],["인제읍","10600"]],
+  "51770":[["고한읍","10100"],["남면","10200"],["동면","10300"],["북평면","10400"],["사북읍","10500"],["신동읍","10600"],["여량면","10700"],["임계면","10800"],["정선읍","10900"],["화암면","11000"]],
+  "51780":[["갈말읍","10100"],["근남면","10200"],["근북면","10300"],["근동면","10400"],["동송읍","10500"],["서면","10600"],["철원읍","10700"],["김화읍","10800"],["원동면","10900"],["이길리면","11000"]],
+  "51760":[["개수면","10100"],["대관령면","10200"],["대화면","10300"],["도암면","10400"],["봉평면","10500"],["방림면","10600"],["용평면","10700"],["진부면","10800"],["평창읍","10900"]],
+  "51720":[["내면","10100"],["남면","10200"],["두촌면","10300"],["동면","10400"],["북방면","10500"],["서면","10600"],["서석면","10700"],["영귀미면","10800"],["홍천읍","10900"],["화촌면","11000"]],
+  "51790":[["간동면","10100"],["사내면","10200"],["상서면","10300"],["하남면","10400"],["화천읍","10500"]],
+  "51730":[["갑천면","10100"],["강림면","10200"],["공근면","10300"],["둔내면","10400"],["서원면","10500"],["안흥면","10600"],["우천면","10700"],["청일면","10800"],["횡성읍","10900"]],
   "43112":[["개신동","10100"],["가경동","10200"],["복대동","10300"],["분평동","10400"],["산남동","10500"],["성화동","10600"],["수곡동","10700"],["신봉동","10800"],["원평동","10900"],["장성동","11000"],["잠실동","11100"],["지북동","11200"],["사창동","11300"],["모충동","11400"],["용담동","11500"]],
   "43113":[["강서동","10100"],["봉명동","10200"],["신촌동","10300"],["오송읍","10400"],["옥산면","10500"],["운천동","10600"],["정북동","10700"],["주성동","10800"],["향정동","10900"],["흥덕동","11000"],["미평동","11100"],["송절동","11200"],["신성동","11300"],["석곡동","11400"],["화계동","11500"]],
   "43114":[["내수읍","10100"],["북이면","10200"],["오창읍","10300"],["옥산면","10400"],["주성동","10500"],["율량사천동","10600"],["우암동","10700"],["내덕동","10800"],["오근장동","10900"]],
@@ -529,31 +545,31 @@ const DONG_MAP = {
 };
 
 const RI_MAP = {
-  "42740_평창읍":["-(읍 전체)","거차리","고길리","공기리","관음리","교리","낙동리","노성리","뇌운리","대하리","도돈리","두일리","마지리","봉산리","상리","약수리","응암리","입탄리","종부리","주진리","평창리"],
-  "42740_용평면":["-(면 전체)","개수리","노동리","백옥포리","속사리","수하리","야촌리","조동리","조전리"],
-  "42740_방림면":["-(면 전체)","계촌리","굴론리","방림리","봉래리","운교리","원당리","조항리"],
-  "42740_대화면":["-(면 전체)","개수리","길항리","상안미리","신리","안미리","장전평리","하안미리","화동리"],
-  "42740_봉평면":["-(면 전체)","면온리","무이리","백옥포리","봉평리","사창리","수항리","유포리","창동리"],
-  "42740_진부면":["-(면 전체)","간평리","구산리","금당계리","막동리","봉산리","수항리","신기리","오대리","탑동리","화의리"],
-  "42740_미탄면":["-(면 전체)","기화리","마하리","속사리","수산리","청옥리"],
-  "42150_강동면":["-(면 전체)","강동리","남양리","산성우리","상시동리","시동리","안인리","안인진리","언별리","임곡리","정동진리","하시동리"],
-  "42150_왕산면":["-(면 전체)","고단리","대기리","송현리","왕산리","목계리"],
-  "42150_옥계면":["-(면 전체)","금진리","낙풍리","도직리","북동리","산계리","조산리"],
-  "42150_성산면":["-(면 전체)","관음리","금산리","남양리","보광리","위촌리","오봉리"],
-  "42720_홍천읍":["-(읍 전체)","갈마곡리","검율리","결운리","곡교리","구성포리","기린리","남산리","대곡리","매산리","반곡리","신방리","연봉리","영귀미리","하오안리"],
-  "42720_화촌면":["-(면 전체)","가평리","구성포리","군업리","대곡리","모곡리","산수리","생우리","성산리","와우리"],
-  "42830_양양읍":["-(읍 전체)","가평리","공수전리","광석리","군행리","남문리","동문리","서문리","서양리","송암리","운곡리","월리"],
-  "42830_손양면":["-(면 전체)","가평리","논화리","도화리","상왕도리","수산리","오산리","학포리"],
-  "42830_현북면":["-(면 전체)","기사문리","법수치리","어성전리","원일전리","잔교리"],
-  "42830_현남면":["-(면 전체)","광진리","남애리","원포리","인구리","지경리"],
-  "42830_서면":["-(면 전체)","갈천리","논화리","북평리","서림리","송천리","왕곡리"],
-  "42830_강현면":["-(면 전체)","강선리","공수전리","물치리","용호리","유천리","인구리"],
-  "42790_인제읍":["-(읍 전체)","가아리","고사리","귀둔리","남전리","덕산리","덕적리","덕치리","소양로","합강리"],
-  "42790_남면":["-(면 전체)","갑둔리","관대리","금붕리","김부리","부평리","상남리","신남리"],
-  "42790_북면":["-(면 전체)","갈전리","냅상리","백담리","용대리","원통리","한계리"],
-  "42770_철원읍":["-(읍 전체)","가단리","관전리","내포리","대마리","독검리","산명리","생창리","외촌리","월하리","이길리","자등리"],
-  "42770_동송읍":["-(읍 전체)","강산리","관우리","대위리","상노리","오덕리","장흥리","중강리"],
-  "42770_갈말읍":["-(읍 전체)","강포리","내대리","동막리","문혜리","사요리","신철원리","정연리","지포리"],
+  "51760_평창읍":["-(읍 전체)","거차리","고길리","공기리","관음리","교리","낙동리","노성리","뇌운리","대하리","도돈리","두일리","마지리","봉산리","상리","약수리","응암리","입탄리","종부리","주진리","평창리"],
+  "51760_용평면":["-(면 전체)","개수리","노동리","백옥포리","속사리","수하리","야촌리","조동리","조전리"],
+  "51760_방림면":["-(면 전체)","계촌리","굴론리","방림리","봉래리","운교리","원당리","조항리"],
+  "51760_대화면":["-(면 전체)","개수리","길항리","상안미리","신리","안미리","장전평리","하안미리","화동리"],
+  "51760_봉평면":["-(면 전체)","면온리","무이리","백옥포리","봉평리","사창리","수항리","유포리","창동리"],
+  "51760_진부면":["-(면 전체)","간평리","구산리","금당계리","막동리","봉산리","수항리","신기리","오대리","탑동리","화의리"],
+  "51760_미탄면":["-(면 전체)","기화리","마하리","속사리","수산리","청옥리"],
+  "51150_강동면":["-(면 전체)","강동리","남양리","산성우리","상시동리","시동리","안인리","안인진리","언별리","임곡리","정동진리","하시동리"],
+  "51150_왕산면":["-(면 전체)","고단리","대기리","송현리","왕산리","목계리"],
+  "51150_옥계면":["-(면 전체)","금진리","낙풍리","도직리","북동리","산계리","조산리"],
+  "51150_성산면":["-(면 전체)","관음리","금산리","남양리","보광리","위촌리","오봉리"],
+  "51720_홍천읍":["-(읍 전체)","갈마곡리","검율리","결운리","곡교리","구성포리","기린리","남산리","대곡리","매산리","반곡리","신방리","연봉리","영귀미리","하오안리"],
+  "51720_화촌면":["-(면 전체)","가평리","구성포리","군업리","대곡리","모곡리","산수리","생우리","성산리","와우리"],
+  "51830_양양읍":["-(읍 전체)","가평리","공수전리","광석리","군행리","남문리","동문리","서문리","서양리","송암리","운곡리","월리"],
+  "51830_손양면":["-(면 전체)","가평리","논화리","도화리","상왕도리","수산리","오산리","학포리"],
+  "51830_현북면":["-(면 전체)","기사문리","법수치리","어성전리","원일전리","잔교리"],
+  "51830_현남면":["-(면 전체)","광진리","남애리","원포리","인구리","지경리"],
+  "51830_서면":["-(면 전체)","갈천리","논화리","북평리","서림리","송천리","왕곡리"],
+  "51830_강현면":["-(면 전체)","강선리","공수전리","물치리","용호리","유천리","인구리"],
+  "51740_인제읍":["-(읍 전체)","가아리","고사리","귀둔리","남전리","덕산리","덕적리","덕치리","소양로","합강리"],
+  "51740_남면":["-(면 전체)","갑둔리","관대리","금붕리","김부리","부평리","상남리","신남리"],
+  "51740_북면":["-(면 전체)","갈전리","냅상리","백담리","용대리","원통리","한계리"],
+  "51780_철원읍":["-(읍 전체)","가단리","관전리","내포리","대마리","독검리","산명리","생창리","외촌리","월하리","이길리","자등리"],
+  "51780_동송읍":["-(읍 전체)","강산리","관우리","대위리","상노리","오덕리","장흥리","중강리"],
+  "51780_갈말읍":["-(읍 전체)","강포리","내대리","동막리","문혜리","사요리","신철원리","정연리","지포리"],
   "41820_가평읍":["-(읍 전체)","개곡리","경반리","금대리","달전리","대곡리","대성리","두밀리","마장리","복장리","상색리","승안리","연하리","이화리","장신리","조종리"],
   "41820_청평면":["-(면 전체)","고성리","고잠리","대성리","삼회리","상천리","설악면","신청평리","우목리","하천리","호명리"],
   "41820_설악면":["-(면 전체)","가일리","묵안리","사룡리","선촌리","신천리","위곡리"],
@@ -574,6 +590,7 @@ const RI_MAP = {
   "44825_안면읍":["-(읍 전체)","고남리","국화리","기지포리","누동리","승언리","정당리"],
 };
 
+const VWORLD_KEY = "7AC1EB05-CB09-3307-B8D0-68CC0141E182";
 const SERVICE_KEY = "dacf12f15f16ec3ddbac6fcda43f12c93ec07fe731c89033f5fdcf2ba649bc04";
 const BLDG_KEY   = "dacf12f15f16ec3ddbac6fcda43f12c93ec07fe731c89033f5fdcf2ba649bc04";
 const TRADE_BASE = "https://apis.data.go.kr/1613000";
@@ -583,7 +600,7 @@ const TYPE_CONFIG = {
   apt:  { label:"아파트",    badgeClass:"type-apt",   months:3,
           url:`${TRADE_BASE}/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev`,
           nameField:"aptNm", dongField:"umdNm", areaField:"excluUseAr",
-          bldgPurpCd:["02"], // 건축물대장 주용도코드: 아파트
+          bldgPurpCd:["02001","02"], // 아파트 (02001=아파트, 02=공동주택 전체)
           bldgMonths:12 },
   offi: { label:"오피스텔",  badgeClass:"type-offi",  months:3,
           url:`${TRADE_BASE}/RTMSDataSvcOffiTrade/getRTMSDataSvcOffiTrade`,
@@ -593,7 +610,7 @@ const TYPE_CONFIG = {
   villa:{ label:"연립다세대",badgeClass:"type-villa", months:3,
           url:`${TRADE_BASE}/RTMSDataSvcRHTrade/getRTMSDataSvcRHTrade`,
           nameField:"mhouseNm", dongField:"umdNm", areaField:"excluUseAr",
-          bldgPurpCd:["03","04"], // 연립주택, 다세대주택
+          bldgPurpCd:["02002","02003"], // 연립주택, 다세대주택
           bldgMonths:60 },
   land: { label:"토지", badgeClass:"type-land", months:12,
           url:`${TRADE_BASE}/RTMSDataSvcLandTrade/getRTMSDataSvcLandTrade`,
@@ -645,12 +662,12 @@ const GU_LIST = [
   {g:"울산",n:"남구",c:"31140",b:"140"},{g:"울산",n:"동구",c:"31170",b:"170"},{g:"울산",n:"북구",c:"31200",b:"200"},
   {g:"울산",n:"울주군",c:"31710",b:"710"},{g:"울산",n:"중구",c:"31110",b:"110"},
   {g:"세종",n:"세종시",c:"36110",b:"110"},
-  {g:"강원",n:"강릉시",c:"42150",b:"150"},{g:"강원",n:"동해시",c:"42170",b:"170"},{g:"강원",n:"삼척시",c:"42230",b:"230"},
-  {g:"강원",n:"속초시",c:"42210",b:"210"},{g:"강원",n:"원주시",c:"42130",b:"130"},{g:"강원",n:"춘천시",c:"42110",b:"110"},
-  {g:"강원",n:"태백시",c:"42190",b:"190"},{g:"강원",n:"고성군",c:"42820",b:"820"},{g:"강원",n:"양구군",c:"42780",b:"780"},
-  {g:"강원",n:"양양군",c:"42830",b:"830"},{g:"강원",n:"영월군",c:"42750",b:"750"},{g:"강원",n:"인제군",c:"42790",b:"790"},
-  {g:"강원",n:"정선군",c:"42760",b:"760"},{g:"강원",n:"철원군",c:"42770",b:"770"},{g:"강원",n:"평창군",c:"42740",b:"740"},
-  {g:"강원",n:"홍천군",c:"42720",b:"720"},{g:"강원",n:"화천군",c:"42800",b:"800"},{g:"강원",n:"횡성군",c:"42730",b:"730"},
+  {g:"강원특별자치도",n:"강릉시",c:"51150",b:"150"},{g:"강원특별자치도",n:"동해시",c:"51170",b:"170"},{g:"강원특별자치도",n:"삼척시",c:"51230",b:"230"},
+  {g:"강원특별자치도",n:"속초시",c:"51210",b:"210"},{g:"강원특별자치도",n:"원주시",c:"51130",b:"130"},{g:"강원특별자치도",n:"춘천시",c:"51110",b:"110"},
+  {g:"강원특별자치도",n:"태백시",c:"51190",b:"190"},{g:"강원특별자치도",n:"고성군",c:"51820",b:"820"},{g:"강원특별자치도",n:"철원군",c:"51780",b:"780"},
+  {g:"강원특별자치도",n:"양양군",c:"51830",b:"830"},{g:"강원특별자치도",n:"영월군",c:"51750",b:"750"},{g:"강원특별자치도",n:"화천군",c:"51790",b:"790"},
+  {g:"강원특별자치도",n:"평창군",c:"51760",b:"760"},{g:"강원특별자치도",n:"정선군",c:"51770",b:"770"},{g:"강원특별자치도",n:"인제군",c:"51740",b:"740"},
+  {g:"강원특별자치도",n:"홍천군",c:"51720",b:"720"},{g:"강원특별자치도",n:"양구군",c:"51800",b:"800"},{g:"강원특별자치도",n:"횡성군",c:"51730",b:"730"},
   {g:"충북",n:"청주시 상당구",c:"43111",b:"111"},{g:"충북",n:"청주시 서원구",c:"43112",b:"112"},{g:"충북",n:"청주시 흥덕구",c:"43113",b:"113"},
   {g:"충북",n:"청주시 청원구",c:"43114",b:"114"},{g:"충북",n:"충주시",c:"43130",b:"130"},{g:"충북",n:"제천시",c:"43150",b:"150"},
   {g:"충북",n:"보은군",c:"43720",b:"720"},{g:"충북",n:"옥천군",c:"43730",b:"730"},{g:"충북",n:"영동군",c:"43740",b:"740"},
@@ -783,18 +800,31 @@ function setStep(prefix, total, active) {
 function setReady(id,on){ document.getElementById(id)?.classList.toggle("ready",on); }
 
 /* 실거래 병렬 fetch */
-async function fetchTradeData(cfg, lawdCd, months) {
+async function fetchTradeData(cfg, lawdCd, months, onProgress) {
+  // 순차 호출 + 429 재시도 (병렬은 운영계정도 한도 초과)
   const results=[];
-  await Promise.all(months.map(async ym=>{
-    try{
-      const p=new URLSearchParams({serviceKey:SERVICE_KEY,LAWD_CD:lawdCd,DEAL_YMD:ym,pageNo:"1",numOfRows:"1000"});
-      const res=await fetch(`${cfg.url}?${p}`);
-      if(!res.ok) return;
-      const xml=await res.text();
-      if(xml.includes("SERVICE_KEY_IS_NOT_REGISTERED_ERROR")) return;
-      results.push(...parseXML(xml));
-    }catch(e){}
-  }));
+  for(let i=0; i<months.length; i++){
+    const ym=months[i];
+    if(onProgress) onProgress(i+1, months.length);
+    let retries=3, delay=1000;
+    while(retries>0){
+      try{
+        const p=new URLSearchParams({serviceKey:SERVICE_KEY,LAWD_CD:lawdCd,DEAL_YMD:ym,pageNo:"1",numOfRows:"1000"});
+        const res=await fetch(`${cfg.url}?${p}`);
+        if(res.status===429){
+          await new Promise(r=>setTimeout(r,delay));
+          delay*=2; retries--; continue;
+        }
+        if(!res.ok){ break; }
+        const xml=await res.text();
+        if(xml.includes("SERVICE_KEY_IS_NOT_REGISTERED_ERROR")){ retries=0; break; }
+        results.push(...parseXML(xml));
+        break;
+      }catch(e){ break; }
+    }
+    // 호출 간 딜레이 (너무 빠르면 429)
+    if(i<months.length-1) await new Promise(r=>setTimeout(r,120));
+  }
   return results;
 }
 
@@ -1025,12 +1055,15 @@ async function t_onGuChange(){
   document.getElementById("t-dong-spin").style.display="inline-block";
   sel.disabled=true; t_setStep(3);
 
-  t_allData=await fetchTradeData(t_curType, lawdCd, getLastNMonths(t_periodMonths));
+  const t_months=getLastNMonths(t_periodMonths);
+  t_allData=await fetchTradeData(t_curType, lawdCd, t_months, (done,total)=>{
+    document.getElementById("t-dong-spin").style.display="inline-block";
+  });
 
   sel.disabled=false;
   document.getElementById("t-dong-spin").style.display="none";
   if(!t_allData.length){
-    showError("CORS 오류: Chrome 확장 <b style='color:#93c5fd'>CORS Unblock</b>을 설치·활성화 후 재시도해주세요.");
+    showError("데이터가 없습니다. 해당 지역·기간의 거래가 없거나 CORS Unblock 확장을 확인해주세요.");
     t_setStep(3); return;
   }
   const dongs=[...new Set(t_allData.map(it=>(it[t_curType.dongField]||"").trim()).filter(Boolean))].sort();
@@ -1119,7 +1152,7 @@ function f_resetFrom(step){
     const jEl=document.getElementById("f-jibun"); jEl.value=""; jEl.disabled=true; setReady("f-jibun",false);
     const riEl=document.getElementById("f-ri"); riEl.innerHTML='<option value="">-- 리 선택 --</option>'; riEl.disabled=true; setReady("f-ri",false);
     const ljEl=document.getElementById("f-land-jibun"); ljEl.value=""; ljEl.disabled=true; setReady("f-land-jibun",false);
-    const pEl=document.getElementById("f-land-period"); pEl.value=""; pEl.disabled=true; setReady("f-land-period",false);
+
     document.getElementById("f-lookup-btn").disabled=true;
     document.getElementById("f-bldg-list").style.display="none";
     document.getElementById("f-info").style.display="none";
@@ -1144,7 +1177,7 @@ function f_onTypeChange(){
   document.getElementById("f-step4-bldg").style.display=isLand?"none":"block";
   document.getElementById("f-step4-land").style.display=isLand?"block":"none";
   document.getElementById("f-step5-land").style.display=isLand?"block":"none";
-  document.getElementById("f-step6-land").style.display=isLand?"block":"none";
+  
 
   document.getElementById("f-gu").disabled=false; setReady("f-gu",true);
   f_setStep(2); setTimeout(()=>document.getElementById("f-gu").focus(),50);
@@ -1193,10 +1226,9 @@ function f_onDongChange(){
     const riEl=document.getElementById("f-ri");
 
     if(riList.length){
-      // 콤보박스로 전환
       riEl.innerHTML='<option value="">-- 리 선택 (선택사항) --</option>';
       riList.forEach(r=>{
-        if(r.startsWith("-")) return; // 구분자 스킵
+        if(r.startsWith("-")) return;
         const o=document.createElement("option"); o.value=r; o.textContent=r; riEl.appendChild(o);
       });
       riEl.disabled=false; setReady("f-ri",true);
@@ -1208,9 +1240,6 @@ function f_onDongChange(){
     // 번지 입력 활성화
     const ljEl=document.getElementById("f-land-jibun");
     ljEl.disabled=false; setReady("f-land-jibun",true);
-    // 기간 활성화
-    const pEl=document.getElementById("f-land-period");
-    pEl.disabled=false; setReady("f-land-period",true);
     // 조회 버튼 활성화
     document.getElementById("f-lookup-btn").disabled=false;
     f_setStep(4);
@@ -1261,11 +1290,27 @@ async function f_lookupBldg(){
   const dong=document.getElementById("f-dong").value;
   if(!dong||!f_curType) return;
 
-  // 토지: 리/번지 포함 실거래 조회
+  // 토지: 공시지가 조회
   if(f_curType.isLand){
     const ri=(document.getElementById("f-ri").value||"").trim();
     const landJibun=(document.getElementById("f-land-jibun").value||"").trim();
-    await f_landSearch(dong, ri, landJibun);
+    if(!landJibun){
+      showError("번지를 입력해주세요.");
+      document.getElementById("f-lookup-spin").style.display="none";
+      document.getElementById("f-lookup-btn").disabled=false;
+      return;
+    }
+    // 공시지가 섹션 표시 후 바로 조회
+    _gongsiDong=dong; _gongsiRi=ri; _gongsiJibun=landJibun;
+    document.getElementById("f-lookup-spin").style.display="none";
+    document.getElementById("f-lookup-btn").disabled=false;
+    document.getElementById("gongsi-result").innerHTML="";
+    document.getElementById("gongsi-section").style.display="block";
+    // 결과 영역 안내
+    const infoEl=document.getElementById("f-info");
+    infoEl.style.display="block";
+    infoEl.innerHTML=`<b style="color:#60a5fa">${dong} ${ri?ri+" ":""}${landJibun}번지</b> — 아래에서 공시지가를 조회하세요`;
+    await fetchGongsiJiga();
     return;
   }
 
@@ -1279,13 +1324,6 @@ async function f_lookupBldg(){
   }
   clearError();
 
-  const dongMap=dongCodeCache[f_sigunguCd]||{};
-  const bjdongCd=dongMap[dong]||"";
-  if(!bjdongCd){
-    showError(`'${dong}'의 법정동코드를 찾을 수 없습니다.`);
-    return;
-  }
-
   document.getElementById("f-lookup-spin").style.display="inline-block";
   document.getElementById("f-lookup-btn").disabled=true;
   document.getElementById("f-bldg-list").style.display="none";
@@ -1293,77 +1331,122 @@ async function f_lookupBldg(){
   document.getElementById("f-area-row").style.display="none";
   f_bldgItems=[]; f_selectedBldg=null;
 
-  try{
-    const p=new URLSearchParams({
-      serviceKey: BLDG_KEY,
-      sigunguCd:  f_sigunguCd,
-      bjdongCd,
-      bun:        parsed.bun,
-      ji:         parsed.ji,
-      pageNo:     "1",
-      numOfRows:  "50",
-    });
-    const url=`${BLDG_BASE}/getBrTitleInfo?${p}`;
-    console.log("[건축물대장] 요청 URL:", url);
+  // 실거래 데이터로 번지 매칭 (건축물대장 대신)
+  await f_lookupByTrade(dong, jibunRaw, parsed);
+  document.getElementById("f-lookup-spin").style.display="none";
+  document.getElementById("f-lookup-btn").disabled=false;
 
-    const res=await fetch(url);
-    const text=await res.text();
-    console.log("[건축물대장] 응답(첫500자):", text.slice(0,500));
+}
 
-    // XML 파싱
-    const doc=new DOMParser().parseFromString(text,"application/xml");
+/* ── 실거래 데이터 기반 번지 조회 (단계적) ── */
+let _lastLookupParams=null; // 더 조회 시 재사용
 
-    // 에러코드 확인
-    const resultCode=doc.querySelector("resultCode");
-    if(resultCode && resultCode.textContent.trim()!=="00"){
-      const errMsg=doc.querySelector("errMsg");
-      const msg=errMsg?errMsg.textContent.trim():"알 수 없는 오류";
-      showError(`건축물대장 API 오류: ${msg} (코드: ${resultCode.textContent.trim()})`);
-      f_setStep(4); return;
-    }
+async function f_lookupByTrade(dong, jibunRaw, parsed, extraMonths=0){
+  const infoEl=document.getElementById("f-info");
+  infoEl.style.display="block";
 
-    const items=Array.from(doc.querySelectorAll("item")).map(item=>{
-      const obj={};
-      item.childNodes.forEach(n=>{ if(n.nodeType===1) obj[n.tagName.trim()]=(n.textContent||"").trim(); });
-      return obj;
-    });
+  const bunNum=parseInt(parsed.bun)||0;
+  const jiNum =parseInt(parsed.ji)||0;
+  const typeKey=Object.keys(TYPE_CONFIG).find(k=>TYPE_CONFIG[k]===f_curType);
 
-    console.log("[건축물대장] 파싱된 건물 수:", items.length);
+  // 단계별 조회 기간: 첫 조회=3년, 추가=10년
+  const firstMonths=36;
+  const totalMonths=FIND_TRADE_MONTHS[typeKey];
+  const months=getLastNMonths(extraMonths||firstMonths);
 
-    const filtered=items.filter(it=>
-      f_curType.bldgPurpCd.some(cd=>(it.mainPurpsCd||"").trim().startsWith(cd))
-    );
-    f_bldgItems=filtered.length?filtered:items;
+  // 파라미터 저장 (추가 조회용)
+  _lastLookupParams={dong,jibunRaw,parsed,typeKey};
 
-    if(!f_bldgItems.length){
-      document.getElementById("f-info").style.display="block";
-      document.getElementById("f-info").innerHTML=
-        `⚠ <b>${dong} ${jibunRaw}번지</b>에 건축물대장 정보가 없습니다. 번지를 다시 확인해 주세요.`;
-      f_setStep(4); return;
-    }
+  const periodLabel=extraMonths>=120?"최근 10년":extraMonths>=60?"최근 5년":extraMonths>=36?"최근 3년":"최근 3년";
+  infoEl.innerHTML=`<span class="spin" style="margin-right:6px"></span><b>${dong} ${jibunRaw}번지</b> ${periodLabel} 실거래 조회 중… (0/${months.length}개월)`;
 
-    renderBldgList(f_bldgItems, dong, jibunRaw, filtered.length===0);
-    f_setStep(4);
+  const allRows=await fetchTradeData(f_curType, f_lawdCd, months, (done,total)=>{
+    infoEl.innerHTML=`<span class="spin" style="margin-right:6px"></span><b>${dong} ${jibunRaw}번지</b> ${periodLabel} 조회 중… (${done}/${total}개월)`;
+  });
 
-  }catch(e){
-    console.error("[건축물대장] 오류:", e);
-    showError(`건축물대장 조회 오류: ${e.message}`);
-  }finally{
-    document.getElementById("f-lookup-spin").style.display="none";
-    document.getElementById("f-lookup-btn").disabled=false;
+  // 동 + 번지 매칭
+  const df=f_curType.dongField;
+  const dongRows=allRows.filter(r=>(r[df]||"").trim()===dong);
+  const matched=dongRows.filter(r=>{
+    const j=(r.jibun||r.bonbun||"").trim();
+    const numPart=j.replace(/^[^0-9]*/,"");
+    const parts=numPart.split(/[-–]/);
+    const rBun=parseInt(parts[0])||0;
+    const rJi =parseInt(parts[1])||0;
+    return rBun===bunNum && (jiNum===0||rJi===jiNum);
+  });
+
+  if(!matched.length){
+    // 더 긴 기간 조회 제안
+    const nextMonths=extraMonths===0?60:extraMonths===60?120:0;
+    const nextLabel=nextMonths===60?"5년":nextMonths===120?"10년":"";
+    infoEl.innerHTML=`⚠ <b>${dong} ${jibunRaw}번지</b> — ${periodLabel} 실거래 내역 없음`
+      +(nextMonths?` <button onclick="f_lookupMoreYears(${nextMonths})" style="margin-left:8px;padding:3px 10px;background:#1e3a5f;color:#60a5fa;border:1px solid #2d5a8e;border-radius:6px;cursor:pointer;font-size:12px">최근 ${nextLabel}으로 재조회</button>`:"");
+    f_setStep(4); return;
   }
+
+  renderTradeResults(matched, dong, jibunRaw, periodLabel);
+  f_setStep(4);
+}
+
+async function f_lookupMoreYears(months){
+  if(!_lastLookupParams) return;
+  const {dong,jibunRaw,parsed}=_lastLookupParams;
+  document.getElementById("f-lookup-btn").disabled=true;
+  document.getElementById("f-lookup-spin").style.display="inline-block";
+  await f_lookupByTrade(dong, jibunRaw, parsed, months);
+  document.getElementById("f-lookup-spin").style.display="none";
+  document.getElementById("f-lookup-btn").disabled=false;
+}
+
+function renderTradeResults(matched, dong, jibunRaw, periodLabel){
+  // 건물명 그룹화
+  const nf=f_curType.nameField;
+  const nameMap=new Map();
+  matched.forEach(r=>{
+    const nm=(r[nf]||"(이름없음)").trim();
+    if(!nameMap.has(nm)) nameMap.set(nm,[]);
+    nameMap.get(nm).push(r);
+  });
+
+  f_bldgItems=[...nameMap.entries()].map(([name,rows])=>({
+    bldNm:name, platPlc:`${dong} ${jibunRaw}번지`,
+    mainPurpsCdNm:f_curType.label,
+    _tradeRows:rows, _dong:dong,
+  }));
+
+  const listEl=document.getElementById("f-bldg-list");
+  listEl.innerHTML=f_bldgItems.map((it,idx)=>{
+    const rows=it._tradeRows;
+    const areas=[...new Set(rows.map(r=>{ const v=parseFloat(r[f_curType.areaField]||0); return v>0?v.toFixed(1)+"㎡":""; }).filter(Boolean))].join(", ");
+    return `<div class="bldg-item" onclick="f_selectBldg(${idx})" data-idx="${idx}">
+      <div>
+        <div class="bldg-name">${it.bldNm}</div>
+        <div class="bldg-addr">${it.platPlc}</div>
+      </div>
+      <div class="bldg-meta">
+        <div style="color:#a78bfa">${it.mainPurpsCdNm}</div>
+        <div style="color:#10b981">${rows.length}건 거래</div>
+        <div style="font-size:10px;color:#2d3f5e">${areas}</div>
+      </div>
+    </div>`;
+  }).join("");
+  listEl.style.display="block";
+
+  const infoEl=document.getElementById("f-info");
+  infoEl.innerHTML=`<b style="color:#60a5fa">${dong} ${jibunRaw}번지</b> · ${periodLabel} 실거래 기준 ${f_bldgItems.length}개 건물 · 건물을 선택하세요`;
 }
 
 function renderBldgList(items, dongName, jibunRaw, allTypes){
   const listEl=document.getElementById("f-bldg-list");
   const infoEl=document.getElementById("f-info");
   listEl.innerHTML=items.map((it,idx)=>{
-    const name=(it.bldNm||"").trim()||`(이름없음)`;
-    const addr=(it.platPlc||it.newPlatPlc||"").trim();
-    const useNm=(it.mainPurpsCdNm||"").trim();
-    const apprDt=(it.useAprDay||"").trim();
+    const name=String(it.bldNm||"").trim()||`(이름없음)`;
+    const addr=String(it.platPlc||it.newPlatPlc||"").trim();
+    const useNm=String(it.mainPurpsCdNm||"").trim();
+    const apprDt=String(it.useAprDay||"").trim();
     const apprY=apprDt?apprDt.slice(0,4):"";
-    const hhld=(it.hhldCnt||it.fmlyCnt||"").trim();
+    const hhld=String(it.hhldCnt||it.fmlyCnt||"").trim();
     return `<div class="bldg-item" onclick="f_selectBldg(${idx})" data-idx="${idx}">
       <div>
         <div class="bldg-name">${name}</div>
@@ -1385,8 +1468,8 @@ function renderBldgList(items, dongName, jibunRaw, allTypes){
 async function f_selectBldg(idx){
   document.querySelectorAll("#f-bldg-list .bldg-item").forEach((el,i)=>el.classList.toggle("selected",i===idx));
   const it=f_bldgItems[idx];
-  const name=(it.bldNm||"").trim()||`(이름없음)`;
-  const dong=document.getElementById("f-dong").value;
+  const name=String(it.bldNm||"").trim()||`(이름없음)`;
+  const dong=it._dong||document.getElementById("f-dong").value;
   f_selectedBldg={name,it,dong};
 
   document.getElementById("f-area-row").style.display="block";
@@ -1394,51 +1477,35 @@ async function f_selectBldg(idx){
   document.getElementById("f-area").innerHTML='<option value="">-- 조회 중… --</option>';
   document.getElementById("f-area").disabled=true;
   document.getElementById("f-btn").disabled=true;
-  document.getElementById("f-info").innerHTML=
-    `<span class="spin" style="margin-right:6px"></span><b>${name}</b> 실거래 내역 조회 중…`;
 
-  const typeKey=Object.keys(TYPE_CONFIG).find(k=>TYPE_CONFIG[k]===f_curType);
-  const months=getLastNMonths(FIND_TRADE_MONTHS[typeKey]);
-  const allRows=await fetchTradeData(f_curType, f_lawdCd, months);
+  let bldgRows;
 
-  document.getElementById("f-area-spin").style.display="none";
-
-  const nf=f_curType.nameField, df=f_curType.dongField;
-  const periodLabel=FIND_TRADE_MONTHS[typeKey]>=120?"최근 10년":FIND_TRADE_MONTHS[typeKey]>=12?"최근 1년":"최근 3개월";
-
-  // 건축물대장 bun/ji → 정수 변환
-  const bunNum=parseInt((f_selectedBldg.it.bun||"0").trim())||0;
-  const jiNum =parseInt((f_selectedBldg.it.ji ||"0").trim())||0;
-
-  // 1순위: jibun 필드 매칭 (실거래 API는 "232-4" 형태의 단일 jibun 필드 사용)
-  let bldgRows=allRows.filter(r=>{
-    const jibun=(r.jibun||"").trim();
-    const parts=jibun.split(/[-–]/);
-    const rBun=parseInt(parts[0])||0;
-    const rJi =parseInt(parts[1])||0;
-    const dongOk=!dong||(r[df]||"").trim()===dong;
-    return rBun===bunNum && rJi===jiNum && dongOk;
-  });
-
-  // 2순위: bonbun/bubun 필드 매칭 (아파트·오피스텔은 이 필드 사용)
-  if(!bldgRows.length){
-    bldgRows=allRows.filter(r=>{
-      const rBun=parseInt((r.bonbun||"").trim())||0;
-      const rJi =parseInt((r.bubun ||"").trim())||0;
-      const dongOk=!dong||(r[df]||"").trim()===dong;
-      return rBun===bunNum && rJi===jiNum && dongOk;
+  // 실거래 기반 조회 결과 재사용 (_tradeRows 있으면 API 재호출 불필요)
+  if(it._tradeRows){
+    bldgRows=it._tradeRows;
+    document.getElementById("f-area-spin").style.display="none";
+  } else {
+    document.getElementById("f-info").innerHTML=
+      `<span class="spin" style="margin-right:6px"></span><b>${name}</b> 실거래 조회 중…`;
+    const typeKey=Object.keys(TYPE_CONFIG).find(k=>TYPE_CONFIG[k]===f_curType);
+    const months=getLastNMonths(FIND_TRADE_MONTHS[typeKey]);
+    const allRows=await fetchTradeData(f_curType, f_lawdCd, months, (done,total)=>{
+      document.getElementById("f-info").innerHTML=
+        `<span class="spin" style="margin-right:6px"></span><b>${name}</b> 실거래 조회 중… (${done}/${total}개월)`;
     });
-  }
+    document.getElementById("f-area-spin").style.display="none";
 
-  // 3순위: 건물명 완전일치
-  if(!bldgRows.length)
-    bldgRows=allRows.filter(r=>(r[nf]||"").trim()===name&&(!dong||(r[df]||"").trim()===dong));
+    const nf2=f_curType.nameField, df2=f_curType.dongField;
+    // 건물명으로 필터
+    bldgRows=allRows.filter(r=>(r[nf2]||"").trim()===name&&(!dong||(r[df2]||"").trim()===dong));
+    if(!bldgRows.length && name!=="(이름없음)")
+      bldgRows=allRows.filter(r=>(r[nf2]||"").trim().includes(name)&&(!dong||(r[df2]||"").trim()===dong));
+  } // end else
 
-  // 4순위: 건물명 부분일치
-  if(!bldgRows.length && name!=="(이름없음)")
-    bldgRows=allRows.filter(r=>(r[nf]||"").trim().includes(name)&&(!dong||(r[df]||"").trim()===dong));
+  const typeKey2=Object.keys(TYPE_CONFIG).find(k=>TYPE_CONFIG[k]===f_curType);
+  const periodLabel=FIND_TRADE_MONTHS[typeKey2]>=120?"최근 10년":FIND_TRADE_MONTHS[typeKey2]>=60?"최근 5년":FIND_TRADE_MONTHS[typeKey2]>=36?"최근 3년":FIND_TRADE_MONTHS[typeKey2]>=12?"최근 1년":"최근 3개월";
 
-  if(!bldgRows.length){
+  if(!bldgRows||!bldgRows.length){
     document.getElementById("f-info").innerHTML=
       `<b style="color:#60a5fa">${name}</b> — ${periodLabel} 실거래 내역이 없습니다`;
     document.getElementById("f-area").innerHTML='<option value="">-- 거래 없음 --</option>';
@@ -1470,11 +1537,10 @@ async function f_landSearch(dong, ri='', jibun=''){
   document.getElementById("f-area-row").style.display="none";
 
   const months=getLastNMonths(periodVal);
-  // 토지는 순차 호출 (429 방지)
   const infoEl2=document.getElementById("f-info");
   infoEl2.style.display="block";
   infoEl2.innerHTML=`<span class="spin" style="margin-right:6px"></span>토지 실거래 조회 중… (0/${months.length}개월)`;
-  const allRows=await fetchTradeDataSeq(f_curType, f_lawdCd, months, (done,total)=>{
+  const allRows=await fetchTradeData(f_curType, f_lawdCd, months, (done,total)=>{
     infoEl2.innerHTML=`<span class="spin" style="margin-right:6px"></span>토지 실거래 조회 중… (${done}/${total}개월)`;
   });
 
@@ -1531,7 +1597,130 @@ async function f_landSearch(dong, ri='', jibun=''){
   renderLandStats(rows, f_guName, dong, periodLabel);
   renderLandTable(rows);
   document.getElementById("result-box").style.display="block";
+
+  // 공시지가 섹션 표시
+  _gongsiDong=dong; _gongsiRi=ri; _gongsiJibun=jibun;
+  document.getElementById("gongsi-result").innerHTML="";
+  document.getElementById("gongsi-section").style.display="block";
   setTimeout(()=>document.getElementById("result-box").scrollIntoView({behavior:"smooth",block:"nearest"}),50);
+}
+
+
+/* ── 개별공시지가 조회 (vworld) ── */
+let _gongsiDong="", _gongsiRi="", _gongsiJibun="";
+
+function buildPNU(sigunguCd, bjdongCd, platGbCd, bun, ji){
+  // PNU = 시군구(5) + 읍면동(3) + 리(2) + 대지구분(1) + 본번(4) + 부번(4)
+  // bjdongCd는 DONG_MAP에서 가져온 5자리 → 앞3자리=읍면동, 뒤2자리=리
+  const bjd=String(bjdongCd).padStart(5,"0");
+  const umd=bjd.slice(0,3);
+  const ri=bjd.slice(3,5);
+  const gb=String(platGbCd||1); // 1=대지, 2=임야
+  const bunStr=String(parseInt(bun)||0).padStart(4,"0");
+  const jiStr=String(parseInt(ji)||0).padStart(4,"0");
+  return sigunguCd+umd+ri+gb+bunStr+jiStr;
+}
+
+async function fetchGongsiJiga(){
+  const year=document.getElementById("gongsi-year").value;
+  const resultEl=document.getElementById("gongsi-result");
+  const spinEl=document.getElementById("gongsi-spin");
+
+  if(!_gongsiJibun){
+    resultEl.innerHTML='<span style="color:#f59e0b">⚠ 번지를 입력 후 조회하세요</span>';
+    return;
+  }
+
+  // PNU 구성
+  const dongMap=dongCodeCache[f_sigunguCd]||{};
+  const bjdongCd=dongMap[_gongsiDong]||"";
+  if(!bjdongCd){
+    resultEl.innerHTML='<span style="color:#f59e0b">⚠ 동 코드를 찾을 수 없습니다</span>';
+    return;
+  }
+
+  // 번지 파싱
+  const jibunClean=_gongsiJibun.trim().replace(/\s+/g,"");
+  const jm=jibunClean.match(/^(\d+)(?:[-–](\d+))?$/);
+  if(!jm){
+    resultEl.innerHTML='<span style="color:#f59e0b">⚠ 번지 형식 오류</span>';
+    return;
+  }
+  const bun=jm[1]||"0";
+  const ji=jm[2]||"0";
+
+  // 리 이름에서 리 코드 추론 (RI_MAP 역방향 조회는 어려우므로 대지=1, 임야=2 둘 다 시도)
+  const pnu1=buildPNU(f_sigunguCd, bjdongCd, 1, bun, ji); // 대지
+  const pnu2=buildPNU(f_sigunguCd, bjdongCd, 2, bun, ji); // 임야
+
+  spinEl.style.display="inline-block";
+  resultEl.innerHTML='<span style="color:#4b6894">조회 중…</span>';
+
+  async function queryPNU(pnu){
+    // vworld 개별공시지가 API
+    const url=`https://api.vworld.kr/req/data?service=data&request=GetFeature&data=LT_C_AISATPCE&key=${VWORLD_KEY}&attrFilter=pnu:=:${pnu}&category=개별공시지가&format=json&size=10`;
+    try{
+      const res=await fetch(url);
+      const json=await res.json();
+      const features=json?.response?.result?.featureCollection?.features||[];
+      console.log("[공시지가] PNU:", pnu, "features:", features.length, features[0]?.properties);
+      // 기준연도 필터
+      return features.filter(f=>{
+        const props=f.properties||{};
+        const yr=String(props.stdr_year||props.year||"");
+        return yr===String(year)||yr===""||features.length===1;
+      });
+    }catch(e){ return []; }
+  }
+
+  let features=await queryPNU(pnu1);
+  if(!features.length) features=await queryPNU(pnu2);
+
+  spinEl.style.display="none";
+
+  if(!features.length){
+    // 직접 연도 필터 없이 전체 조회
+    const urlAll=`https://api.vworld.kr/req/data?service=data&request=GetFeature&data=LT_C_AISATPCE&key=${VWORLD_KEY}&attrFilter=pnu:=:${pnu1}&format=json&size=20`;
+    try{
+      const res=await fetch(urlAll);
+      const json=await res.json();
+      const all=json?.response?.result?.featureCollection?.features||[];
+      if(all.length){
+        // 최신 연도 표시
+        const sorted=all.sort((a,b)=>parseInt(b.properties?.stdr_year||0)-parseInt(a.properties?.stdr_year||0));
+        renderGongsiResult(sorted.slice(0,3), resultEl);
+        return;
+      }
+    }catch(e){}
+    resultEl.innerHTML=`<span style="color:#f59e0b">⚠ ${year}년 공시지가 데이터가 없습니다 <span style="font-size:10px;color:#2d3f5e">(PNU: ${pnu1})</span></span>`;
+    return;
+  }
+
+  renderGongsiResult(features, resultEl);
+}
+
+function renderGongsiResult(features, el){
+  const rows=features.map(f=>{
+    const p=f.properties||{};
+    // vworld 필드명 다양하게 시도
+    const price=parseInt(p.indvdLandPrice||p.pblntfPc||p.land_price||p.offcl_land_prc||0);
+    const year=p.stdr_year||p.year||p.base_year||"-";
+    const addr=p.addr||p.address||p.full_nm||"-";
+    const area=parseFloat(p.land_ar||p.area||0);
+    if(!price) return "";
+    const total=area>0?`(총 ${Math.round(price*area).toLocaleString()}원, ${area.toFixed(0)}㎡)`:"";
+    return `<div style="display:flex;gap:16px;align-items:baseline;padding:8px 0;border-bottom:1px solid #0f2035">
+      <span style="color:#60a5fa;font-size:13px;font-weight:600;min-width:45px">${year}년</span>
+      <span style="color:#10b981;font-weight:800;font-size:20px">${price.toLocaleString()}<span style="font-size:12px;font-weight:400;color:#4b6894">원/㎡</span></span>
+      <span style="color:#2d3f5e;font-size:11px">${total}</span>
+    </div>`;
+  }).filter(Boolean).join("");
+
+  if(!rows){
+    el.innerHTML='<div style="color:#f59e0b;padding:8px 0">⚠ 해당 연도 공시지가 데이터가 없습니다<br><span style="font-size:11px;color:#2d3f5e">다른 연도를 선택하거나 번지를 확인해주세요</span></div>';
+    return;
+  }
+  el.innerHTML=rows;
 }
 
 /* ── 토지 통계 ── */
