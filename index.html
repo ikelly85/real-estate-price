@@ -1015,12 +1015,19 @@ function makeAlrimiLink(it, cfg){
   const ho=(it["hoNo"]||it["ho"]||"").trim();
   const floor=(it["floor"]||"").trim();
 
-  // 호갱노노 단지 검색 (공시가격 포함)
   const q=encodeURIComponent(name);
-  const url=`https://hogangnono.com/apt/search?query=${q}`;
+  const label=cfg.label||"";
+  // 오피스텔: 홈택스 건물시가표준액 조회 페이지로 연결
+  if(label.includes("오피스텔")){
+    return `<a href="https://hometax.go.kr/websquare/websquare.html?w2xPath=/ui/pp/index_pp.xml&menuCd=search&searchInfo855955077" target="_blank"
+      style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;background:#1a1040;color:#a78bfa;border:1px solid #4c1d95;border-radius:6px;font-size:12px;text-decoration:none;white-space:nowrap"
+      title="홈택스에서 건물 시가표준액 직접 검색">📋 시가표준액</a>`;
+  }
+  // 아파트/연립/다세대 → 네이버 부동산 단지명 검색
+  const url=`https://land.naver.com/search/complex.naver?query=${q}`;
   return `<a href="${url}" target="_blank"
     style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;background:#1a1040;color:#a78bfa;border:1px solid #4c1d95;border-radius:6px;font-size:12px;text-decoration:none;white-space:nowrap"
-    title="${name} 공시가격 확인 (호갱노노)">📋 공시가격</a>`;
+    title="${name} 공시가격 확인 (네이버 부동산)">📋 공시가격</a>`;
 }
 
 function toggleSort(key) {
