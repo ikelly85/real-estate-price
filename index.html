@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>부동산 실거래가 조회1</title>
+<title>부동산 실거래가 조회</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}
@@ -1669,9 +1669,8 @@ async function fetchGongsiJiga(){
       const res=await fetch(`https://api.vworld.kr/ned/data/getIndvdLandPriceAttr?${params}`);
       const json=await res.json();
       console.log("[공시지가] NED응답:", JSON.stringify(json).slice(0,300));
-      const cnt=parseInt(json?.response?.totalCount||0);
-      if(!cnt) return [];
-      const field=json?.landPriceAttr?.field||[];
+      // indvdLandPrices 또는 landPriceAttr 구조 모두 처리
+      const field=json?.indvdLandPrices?.field||json?.landPriceAttr?.field||[];
       return Array.isArray(field)?field:[field].filter(Boolean);
     }catch(e){ return []; }
   }
@@ -1688,7 +1687,7 @@ async function fetchGongsiJiga(){
       const res=await fetch(`https://api.vworld.kr/ned/data/getIndvdLandPriceAttr?${params}`);
       const json=await res.json();
       console.log("[공시지가] 전체조회:", JSON.stringify(json).slice(0,300));
-      const field=json?.landPriceAttr?.field||[];
+      const field=json?.indvdLandPrices?.field||json?.landPriceAttr?.field||[];
       items=Array.isArray(field)?field:[field].filter(Boolean);
     }catch(e){}
   }
@@ -1707,10 +1706,11 @@ function renderGongsiNEDResult(items, el, pnu){
   console.log("[공시지가] items[0]:", JSON.stringify(items[0]));
   const rows=items.map(it=>{
     // NED API 실제 필드명 (응답 확인 후 맞춤)
-    const price=parseInt(it.indvdLandPrice||it.pblntfPc||it.offclLandPrc||it.land_prc||0);
-    const year=it.stdrYear||it.year||"-";
-    const addr=it.addr||it.landAddr||it.address||"";
-    if(!price) return `<div style="color:#4b6894;font-size:11px;padding:4px 0">${JSON.stringify(it).slice(0,100)}</div>`;
+    // NED API 실제 필드명: pblntfPclnd=공시지가(원/㎡), stdrYear=기준연도, ldCodeNm=지역명
+    const price=parseInt(it.pblntfPclnd||it.pblntfPcInd||it.indvdLandPrice||it.pblntfPc||0);
+    const year=it.stdrYear||"-";
+    const addr=it.ldCodeNm||it.addr||"";
+    if(!price) return "";
     return `<div style="display:flex;gap:16px;align-items:baseline;padding:8px 0;border-bottom:1px solid #0f2035">
       <span style="color:#60a5fa;font-size:13px;font-weight:600;min-width:45px">${year}년</span>
       <span style="color:#10b981;font-weight:800;font-size:20px">${price.toLocaleString()}<span style="font-size:12px;font-weight:400;color:#4b6894">원/㎡</span></span>
