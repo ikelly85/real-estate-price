@@ -317,6 +317,7 @@
   <div class="result-box" id="result-box">
     <div class="result-header">
       <span class="result-meta" id="result-meta"></span>
+      <span id="alrimi-link" style="display:none;margin-left:10px"></span>
       <span style="font-size:10px;color:#1e2c45">국토교통부 실거래가 신고</span>
     </div>
     <div class="table-wrap">
@@ -329,7 +330,6 @@
             <th class="ta-r">층</th>
             <th class="ta-r">건축년도</th>
             <th class="sort ta-r" onclick="toggleSort('price')" style="padding-right:16px">거래금액 <span id="arr-price">⇅</span></th>
-            <th style="padding-right:8px"></th>
             <th class="sort ta-r" onclick="toggleSort('date')" style="padding-right:16px">거래일 <span id="arr-date">▼</span></th>
             <th class="ta-r" style="padding-right:16px">거래유형</th>
           </tr>
@@ -937,6 +937,17 @@ function renderStats(rows, cfg, guName, dongName, aptName, areaVal, periodLabel)
   if(areaVal)  label+=` · <span style="color:#60a5fa">${areaVal}㎡</span>`;
   label+=` · ${periodLabel} → <span style="color:#10b981;font-weight:700">${rows.length}건</span>`;
   document.getElementById("result-meta").innerHTML=label;
+  // 공시가격 알리미 링크 (토지 제외)
+  const alrimiEl=document.getElementById("alrimi-link");
+  if(alrimiEl){
+    if(!cfg.isLand && aptName){
+      const fakeRow={}; fakeRow[cfg.nameField]=aptName;
+      alrimiEl.innerHTML=makeAlrimiLink(fakeRow, cfg);
+      alrimiEl.style.display="inline-block";
+    } else {
+      alrimiEl.style.display="none";
+    }
+  }
 }
 
 function renderTable(rows, cfg) {
@@ -963,7 +974,7 @@ function renderTable(rows, cfg) {
   });
   const tbody=document.getElementById("tbody");
   if(!sorted.length){
-    tbody.innerHTML=`<tr><td colspan="9"><div class="empty-state">🔍<br>해당 조건의 거래 내역이 없습니다</div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state">🔍<br>해당 조건의 거래 내역이 없습니다</div></td></tr>`;
     return;
   }
   tbody.innerHTML=sorted.map(it=>{
@@ -988,7 +999,6 @@ function renderTable(rows, cfg) {
       <td class="ta-r" style="padding-right:16px;font-weight:800;font-size:15px;color:${col};letter-spacing:-.3px;white-space:nowrap">${formatPrice(it["dealAmount"])}</td>
       <td class="ta-r" style="padding-right:16px;color:#93c5fd;font-size:12px;font-family:monospace;font-weight:600;white-space:nowrap">${dateStr}</td>
       <td class="ta-r" style="padding-right:16px;font-size:11px;color:${gbn==="직거래"?"#f97316":"#2d3f5e"}">${gbn||"-"}</td>
-      <td style="padding:6px 8px;white-space:nowrap">${makeAlrimiLink(it, window._curCfg)}</td>
     </tr>`;
   }).join("");
 }
@@ -1019,8 +1029,8 @@ function makeAlrimiLink(it, cfg){
   const label=hint?`공시가격${hint}`:"공시가격";
 
   return `<a href="${url}" target="_blank"
-    style="display:inline-block;padding:2px 7px;background:#1a1040;color:#a78bfa;border:1px solid #4c1d95;border-radius:4px;font-size:10px;text-decoration:none;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis"
-    title="${tooltip}">${label}</a>`;
+    style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;background:#1a1040;color:#a78bfa;border:1px solid #4c1d95;border-radius:6px;font-size:12px;text-decoration:none;white-space:nowrap"
+    title="${tooltip}">📋 공시가격 알리미</a>`;
 }
 
 function toggleSort(key) {
@@ -1851,7 +1861,6 @@ function renderLandTable(rows){
     <th class="ta-l">지목</th>
     <th class="ta-r">면적(㎡)</th>
     <th class="ta-r" style="padding-right:16px">거래금액</th>
-    <th style="padding-right:8px"></th>
     <th class="ta-r" style="padding-right:16px">거래일</th>
     <th class="ta-r" style="padding-right:16px">거래유형</th>`;
 
@@ -1877,7 +1886,6 @@ function renderLandTable(rows){
       <td style="color:#4b6894;font-size:12px;white-space:nowrap">${landUse}</td>
       <td class="ta-r" style="color:#4b6894;white-space:nowrap">${area>0?area.toFixed(1)+"㎡":"-"}</td>
       <td class="ta-r" style="padding-right:16px;font-weight:800;font-size:15px;color:${col};letter-spacing:-.3px;white-space:nowrap">${formatPrice(it["dealAmount"])}</td>
-      <td style="padding:6px 8px;white-space:nowrap">${makeAlrimiLink(it, f_curType)}</td>
       <td class="ta-r" style="padding-right:16px;color:#93c5fd;font-size:12px;font-family:monospace;font-weight:600;white-space:nowrap">${dateStr}</td>
       <td class="ta-r" style="padding-right:16px;font-size:11px;color:${gbn==="직거래"?"#f97316":"#2d3f5e"}">${gbn||"-"}</td>
     </tr>`;
