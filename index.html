@@ -329,6 +329,7 @@
             <th class="ta-r">층</th>
             <th class="ta-r">건축년도</th>
             <th class="sort ta-r" onclick="toggleSort('price')" style="padding-right:16px">거래금액 <span id="arr-price">⇅</span></th>
+            <th style="padding-right:8px"></th>
             <th class="sort ta-r" onclick="toggleSort('date')" style="padding-right:16px">거래일 <span id="arr-date">▼</span></th>
             <th class="ta-r" style="padding-right:16px">거래유형</th>
           </tr>
@@ -962,7 +963,7 @@ function renderTable(rows, cfg) {
   });
   const tbody=document.getElementById("tbody");
   if(!sorted.length){
-    tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state">🔍<br>해당 조건의 거래 내역이 없습니다</div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="9"><div class="empty-state">🔍<br>해당 조건의 거래 내역이 없습니다</div></td></tr>`;
     return;
   }
   tbody.innerHTML=sorted.map(it=>{
@@ -987,8 +988,39 @@ function renderTable(rows, cfg) {
       <td class="ta-r" style="padding-right:16px;font-weight:800;font-size:15px;color:${col};letter-spacing:-.3px;white-space:nowrap">${formatPrice(it["dealAmount"])}</td>
       <td class="ta-r" style="padding-right:16px;color:#93c5fd;font-size:12px;font-family:monospace;font-weight:600;white-space:nowrap">${dateStr}</td>
       <td class="ta-r" style="padding-right:16px;font-size:11px;color:${gbn==="직거래"?"#f97316":"#2d3f5e"}">${gbn||"-"}</td>
+      <td style="padding:6px 8px;white-space:nowrap">${makeAlrimiLink(it, window._curCfg)}</td>
     </tr>`;
   }).join("");
+}
+
+function makeAlrimiLink(it, cfg){
+  if(!cfg||cfg.isLand) return "";
+  const name=(it[cfg.nameField]||"").trim();
+  if(!name) return "";
+
+  // 공동주택 공시가격 조회 API 없음 → 알리미 링크
+  // 단지명으로 검색 + 동/호 정보 툴팁 제공
+  const dong=(it["dong"]||it["aptDong"]||"").trim();
+  const ho=(it["hoNo"]||it["ho"]||"").trim();
+  const floor=(it["floor"]||"").trim();
+
+  // realtyprice.kr 단지명 검색 URL
+  const q=encodeURIComponent(name);
+  const url=`https://www.realtyprice.kr/notice/town/nfSplsHousingPriceSearch.sf?searchWordText=${q}`;
+
+  // 툴팁: 선택해야 할 동/호 안내
+  let hint="";
+  if(dong) hint+=` ${dong}동`;
+  if(ho) hint+=` ${ho}호`;
+  else if(floor) hint+=` ${floor}층`;
+  const tooltip=`공시가격 알리미에서 확인${hint?` (${hint.trim()} 선택)`:""}`; 
+
+  // 동/호 정보가 있으면 더 구체적인 버튼 텍스트
+  const label=hint?`공시가격${hint}`:"공시가격";
+
+  return `<a href="${url}" target="_blank"
+    style="display:inline-block;padding:2px 7px;background:#1a1040;color:#a78bfa;border:1px solid #4c1d95;border-radius:4px;font-size:10px;text-decoration:none;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis"
+    title="${tooltip}">${label}</a>`;
 }
 
 function toggleSort(key) {
@@ -1736,12 +1768,21 @@ function renderGongsiNEDResult(items, el, pnu){
 
   // 토지이음 링크 (면적 등 상세정보)
   const jibun=_gongsiRi?`${_gongsiDong} ${_gongsiRi} ${_gongsiJibun}번지`:`${_gongsiDong} ${_gongsiJibun}번지`;
+  // 토지이음: 주소 검색 URL (지번 딥링크 미지원 → 검색어로 이동)
   const eumAddr=encodeURIComponent(`${f_guName} ${jibun}`);
-  const eumUrl=`https://www.eum.go.kr/web/ar/lu/luLandDet.do?selType=D&code=&numType=1&searchText=${eumAddr}`;
+  // 토지이음 지번 조회 URL
+  const eumUrl=`https://www.eum.go.kr/web/ar/lu/luLandDet.do?searchText=${eumAddr}`;
 
-  const linkHtml=`<div style="margin-top:12px;padding-top:10px;border-top:1px solid #0f2035">
-    <span style="color:#4b6894;font-size:11px">면적 등 상세정보: </span>
-    <a href="${eumUrl}" target="_blank" style="color:#60a5fa;font-size:12px;text-decoration:underline">토지이음에서 확인 →</a>
+  const linkHtml=`<div style="margin-top:12px;padding-top:10px;border-top:1px solid #0f2035;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <span style="color:#4b6894;font-size:11px">상세정보:</span>
+    <a href="${eumUrl}" target="_blank"
+      style="padding:3px 10px;background:#0f2035;color:#34d399;border:1px solid #064e3b;border-radius:5px;font-size:11px;text-decoration:none">
+      🗺 토지이음 (용도지역·이용계획)
+    </a>
+    <a href="https://kras.go.kr/land/info/univLandDetail.do?searchAddr=${eumAddr}" target="_blank"
+      style="padding:3px 10px;background:#0f2035;color:#60a5fa;border:1px solid #1e3a5f;border-radius:5px;font-size:11px;text-decoration:none">
+      📐 부동산공부 (면적·지목)
+    </a>
   </div>`;
 
   el.innerHTML=(rows||`<div style="color:#f59e0b;padding:8px">⚠ 공시지가 정보를 파싱할 수 없습니다<br><span style="font-size:10px;color:#2d3f5e">PNU: ${pnu||""}</span></div>`)+linkHtml;
@@ -1810,12 +1851,13 @@ function renderLandTable(rows){
     <th class="ta-l">지목</th>
     <th class="ta-r">면적(㎡)</th>
     <th class="ta-r" style="padding-right:16px">거래금액</th>
+    <th style="padding-right:8px"></th>
     <th class="ta-r" style="padding-right:16px">거래일</th>
     <th class="ta-r" style="padding-right:16px">거래유형</th>`;
 
   const tbody=document.getElementById("tbody");
   if(!sorted.length){
-    tbody.innerHTML=`<tr><td colspan="7"><div class="empty-state">🔍<br>해당 조건의 거래 내역이 없습니다</div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state">🔍<br>해당 조건의 거래 내역이 없습니다</div></td></tr>`;
     return;
   }
   tbody.innerHTML=sorted.map(it=>{
@@ -1835,6 +1877,7 @@ function renderLandTable(rows){
       <td style="color:#4b6894;font-size:12px;white-space:nowrap">${landUse}</td>
       <td class="ta-r" style="color:#4b6894;white-space:nowrap">${area>0?area.toFixed(1)+"㎡":"-"}</td>
       <td class="ta-r" style="padding-right:16px;font-weight:800;font-size:15px;color:${col};letter-spacing:-.3px;white-space:nowrap">${formatPrice(it["dealAmount"])}</td>
+      <td style="padding:6px 8px;white-space:nowrap">${makeAlrimiLink(it, f_curType)}</td>
       <td class="ta-r" style="padding-right:16px;color:#93c5fd;font-size:12px;font-family:monospace;font-weight:600;white-space:nowrap">${dateStr}</td>
       <td class="ta-r" style="padding-right:16px;font-size:11px;color:${gbn==="직거래"?"#f97316":"#2d3f5e"}">${gbn||"-"}</td>
     </tr>`;
