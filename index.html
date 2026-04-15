@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>부동산 실거래가/공시지가 조회</title>
+<title>부동산 실거래가 조회</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}
@@ -1631,77 +1631,94 @@ async function fetchGongsiJiga(){
     return;
   }
 
-  // PNU 구성
-  const dongMap=dongCodeCache[f_sigunguCd]||{};
-  const bjdongCd=dongMap[_gongsiDong]||"";
-  if(!bjdongCd){
-    resultEl.innerHTML='<span style="color:#f59e0b">⚠ 동 코드를 찾을 수 없습니다</span>';
-    return;
-  }
-
-  // 번지 파싱
-  const jm=_gongsiJibun.trim().match(/^(\d+)(?:[-–](\d+))?$/);
-  if(!jm){
-    resultEl.innerHTML='<span style="color:#f59e0b">⚠ 번지 형식 오류</span>';
-    return;
-  }
-  const bun=jm[1]||"0";
-  const ji=jm[2]||"0";
-
   spinEl.style.display="inline-block";
-  resultEl.innerHTML='<span style="color:#4b6894">조회 중…</span>';
+  resultEl.innerHTML='<span style="color:#4b6894">주소 검색 중…</span>';
 
-  // 국가종점데이터 API (getIndvdLandPriceAttr)
-  // PNU: 시군구(5)+읍면동(3)+리(2)+대지구분(1)+본번(4)+부번(4) = 19자리
-  // 대지=1, 임야=2 둘 다 시도
-  const pnu1=buildPNU(f_sigunguCd, bjdongCd, 1, bun, ji);
-  const pnu2=buildPNU(f_sigunguCd, bjdongCd, 2, bun, ji);
+  // 1단계: vworld 주소검색 API로 실제 PNU(level4LC) 취득
+  const riPart = _gongsiRi ? ` ${_gongsiRi}` : "";
+  const fullAddr = `강원특별자치도 ${f_guName} ${_gongsiDong}${riPart} ${_gongsiJibun}`;
+  let pnu = "";
+  try{
+    const ap=new URLSearchParams({
+      service:"address", request:"getcoord", crs:"epsg:4326",
+      address:fullAddr, format:"json", type:"PARCEL",
+      key:VWORLD_KEY, domain:"https://ikelly85.github.io"
+    });
+    const ares=await fetch(`https://api.vworld.kr/req/address?${ap}`);
+    const aj=await ares.json();
+    pnu=aj?.response?.refined?.structure?.level4LC||"";
+    console.log("[공시지가] 주소:", fullAddr, "→ PNU:", pnu);
+  }catch(e){ console.error("[공시지가] 주소검색 오류:", e); }
 
-  async function queryNED(pnu){
-    const p=new URLSearchParams({
-      pnu, stdrYear:year, format:"json",
+  if(!pnu){
+    spinEl.style.display="none";
+    resultEl.innerHTML=`<div style="color:#f59e0b;padding:8px 0">⚠ 주소를 찾을 수 없습니다<br><span style="font-size:11px;color:#2d3f5e">${fullAddr}</span></div>`;
+    return;
+  }
+
+  // 2단계: PNU로 개별공시지가 조회
+  resultEl.innerHTML='<span style="color:#4b6894">공시지가 조회 중…</span>';
+
+  async function queryNED(p, yr){
+    const params=new URLSearchParams({
+      pnu:p, stdrYear:yr, format:"json",
       numOfRows:"10", pageNo:"1",
       key:VWORLD_KEY, domain:"https://ikelly85.github.io"
     });
     try{
-      const res=await fetch(`https://api.vworld.kr/ned/data/getIndvdLandPriceAttr?${p}`);
+      const res=await fetch(`https://api.vworld.kr/ned/data/getIndvdLandPriceAttr?${params}`);
       const json=await res.json();
-      console.log("[공시지가] PNU:", pnu, JSON.stringify(json).slice(0,200));
-      // 응답 구조: json.landPriceAttr.field[] 또는 json.result
-      const items=json?.landPriceAttr?.field||json?.result?.items||[];
-      return Array.isArray(items)?items:(items?[items]:[]);
-    }catch(e){ console.error("[공시지가] 오류:", e); return []; }
+      console.log("[공시지가] NED응답:", JSON.stringify(json).slice(0,300));
+      const cnt=parseInt(json?.response?.totalCount||0);
+      if(!cnt) return [];
+      const field=json?.landPriceAttr?.field||[];
+      return Array.isArray(field)?field:[field].filter(Boolean);
+    }catch(e){ return []; }
   }
 
-  let items=await queryNED(pnu1);
-  if(!items.length) items=await queryNED(pnu2);
+  let items=await queryNED(pnu, year);
+
+  // 해당 연도 데이터 없으면 연도 없이 전체 조회
+  if(!items.length){
+    const params=new URLSearchParams({
+      pnu, format:"json", numOfRows:"10", pageNo:"1",
+      key:VWORLD_KEY, domain:"https://ikelly85.github.io"
+    });
+    try{
+      const res=await fetch(`https://api.vworld.kr/ned/data/getIndvdLandPriceAttr?${params}`);
+      const json=await res.json();
+      console.log("[공시지가] 전체조회:", JSON.stringify(json).slice(0,300));
+      const field=json?.landPriceAttr?.field||[];
+      items=Array.isArray(field)?field:[field].filter(Boolean);
+    }catch(e){}
+  }
 
   spinEl.style.display="none";
 
   if(!items.length){
-    resultEl.innerHTML=`<div style="color:#f59e0b;padding:8px 0">⚠ ${year}년 공시지가 데이터가 없습니다<br><span style="font-size:11px;color:#2d3f5e">PNU: ${pnu1}</span></div>`;
+    resultEl.innerHTML=`<div style="color:#f59e0b;padding:8px 0">⚠ ${year}년 공시지가 데이터가 없습니다<br><span style="font-size:11px;color:#2d3f5e">PNU: ${pnu}</span></div>`;
     return;
   }
 
-  renderGongsiNEDResult(items, resultEl);
+  renderGongsiNEDResult(items, resultEl, pnu);
 }
 
-function renderGongsiNEDResult(items, el){
+function renderGongsiNEDResult(items, el, pnu){
+  console.log("[공시지가] items[0]:", JSON.stringify(items[0]));
   const rows=items.map(it=>{
-    // 필드명 확인 후 파싱
-    const price=parseInt(it.indvdLandPrice||it.pblntfPc||it.land_prc||0);
+    // NED API 실제 필드명 (응답 확인 후 맞춤)
+    const price=parseInt(it.indvdLandPrice||it.pblntfPc||it.offclLandPrc||it.land_prc||0);
     const year=it.stdrYear||it.year||"-";
-    const addr=it.addr||it.landAddr||"-";
-    const area=parseFloat(it.ladUseSittn||it.area||0);
-    if(!price) return "";
+    const addr=it.addr||it.landAddr||it.address||"";
+    if(!price) return `<div style="color:#4b6894;font-size:11px;padding:4px 0">${JSON.stringify(it).slice(0,100)}</div>`;
     return `<div style="display:flex;gap:16px;align-items:baseline;padding:8px 0;border-bottom:1px solid #0f2035">
       <span style="color:#60a5fa;font-size:13px;font-weight:600;min-width:45px">${year}년</span>
       <span style="color:#10b981;font-weight:800;font-size:20px">${price.toLocaleString()}<span style="font-size:12px;font-weight:400;color:#4b6894">원/㎡</span></span>
-      ${addr!=="-"?`<span style="color:#2d3f5e;font-size:11px">${addr}</span>`:""}
+      ${addr?`<span style="color:#2d3f5e;font-size:11px">${addr}</span>`:""}
     </div>`;
   }).filter(Boolean).join("");
 
-  el.innerHTML=rows||'<div style="color:#f59e0b;padding:8px">⚠ 공시지가 정보를 파싱할 수 없습니다</div>';
+  el.innerHTML=rows||`<div style="color:#f59e0b;padding:8px">⚠ 공시지가 정보를 파싱할 수 없습니다<br><span style="font-size:10px;color:#2d3f5e">PNU: ${pnu||""}</span></div>`;
 }
 
 function renderGongsiResult(features, el){
