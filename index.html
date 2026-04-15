@@ -1722,21 +1722,29 @@ function renderGongsiNEDResult(items, el, pnu){
     const price=parseInt(it.pblntfPclnd||it.pblntfPcInd||it.indvdLandPrice||it.pblntfPc||0);
     const year=it.stdrYear||"-";
     const addr=it.ldCodeNm||it.addr||"";
-    const area=parseFloat(it.stdrMt||it.area||0);
+    const lndcl=it.regstrSeCodeNm||""; // 지목
     if(!price) return "";
-    const total=area>0?Math.round(price*area):0;
     return `<div style="padding:10px 0;border-bottom:1px solid #0f2035">
       <div style="display:flex;gap:16px;align-items:baseline;margin-bottom:4px">
         <span style="color:#60a5fa;font-size:13px;font-weight:600;min-width:45px">${year}년</span>
         <span style="color:#10b981;font-weight:800;font-size:20px">${price.toLocaleString()}<span style="font-size:12px;font-weight:400;color:#4b6894">원/㎡</span></span>
-        ${area>0?`<span style="color:#4b6894;font-size:12px">${area.toFixed(0)}㎡</span>`:""}
+        ${lndcl?`<span style="color:#4b6894;font-size:12px">${lndcl}</span>`:""}
       </div>
-      ${total>0?`<div style="color:#dde3f0;font-size:13px;padding-left:53px">총 공시가격 <span style="color:#f59e0b;font-weight:700">${total.toLocaleString()}원</span> <span style="color:#2d3f5e;font-size:11px">(${area.toFixed(0)}㎡ × ${price.toLocaleString()}원)</span></div>`:""}
       ${addr?`<div style="color:#2d3f5e;font-size:11px;padding-left:53px;margin-top:2px">${addr}</div>`:""}
     </div>`;
   }).filter(Boolean).join("");
 
-  el.innerHTML=rows||`<div style="color:#f59e0b;padding:8px">⚠ 공시지가 정보를 파싱할 수 없습니다<br><span style="font-size:10px;color:#2d3f5e">PNU: ${pnu||""}</span></div>`;
+  // 토지이음 링크 (면적 등 상세정보)
+  const jibun=_gongsiRi?`${_gongsiDong} ${_gongsiRi} ${_gongsiJibun}번지`:`${_gongsiDong} ${_gongsiJibun}번지`;
+  const eumAddr=encodeURIComponent(`${f_guName} ${jibun}`);
+  const eumUrl=`https://www.eum.go.kr/web/ar/lu/luLandDet.do?selType=D&code=&numType=1&searchText=${eumAddr}`;
+
+  const linkHtml=`<div style="margin-top:12px;padding-top:10px;border-top:1px solid #0f2035">
+    <span style="color:#4b6894;font-size:11px">면적 등 상세정보: </span>
+    <a href="${eumUrl}" target="_blank" style="color:#60a5fa;font-size:12px;text-decoration:underline">토지이음에서 확인 →</a>
+  </div>`;
+
+  el.innerHTML=(rows||`<div style="color:#f59e0b;padding:8px">⚠ 공시지가 정보를 파싱할 수 없습니다<br><span style="font-size:10px;color:#2d3f5e">PNU: ${pnu||""}</span></div>`)+linkHtml;
 }
 
 function renderGongsiResult(features, el){
