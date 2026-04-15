@@ -1633,6 +1633,9 @@ async function fetchGongsiJiga(){
 
   spinEl.style.display="inline-block";
   resultEl.innerHTML='<span style="color:#4b6894">주소 검색 중…</span>';
+  // 중복 호출 방지
+  if(spinEl.dataset.running==="1") return;
+  spinEl.dataset.running="1";
 
   // 1단계: vworld 주소검색 API로 실제 PNU(level4LC) 취득
   const riPart = _gongsiRi ? ` ${_gongsiRi}` : "";
@@ -1652,6 +1655,7 @@ async function fetchGongsiJiga(){
 
   if(!pnu){
     spinEl.style.display="none";
+    spinEl.dataset.running="";
     resultEl.innerHTML=`<div style="color:#f59e0b;padding:8px 0">⚠ 주소를 찾을 수 없습니다<br><span style="font-size:11px;color:#2d3f5e">${fullAddr}</span></div>`;
     return;
   }
@@ -1693,6 +1697,7 @@ async function fetchGongsiJiga(){
   }
 
   spinEl.style.display="none";
+  spinEl.dataset.running="";
 
   if(!items.length){
     resultEl.innerHTML=`<div style="color:#f59e0b;padding:8px 0">⚠ ${year}년 공시지가 데이터가 없습니다<br><span style="font-size:11px;color:#2d3f5e">PNU: ${pnu}</span></div>`;
@@ -1703,18 +1708,31 @@ async function fetchGongsiJiga(){
 }
 
 function renderGongsiNEDResult(items, el, pnu){
+  // stdrYear 기준 중복 제거 (같은 연도 중 최신 업데이트 1개만)
+  const seen=new Set();
+  items=items.filter(it=>{
+    const k=it.stdrYear||it.year||"?";
+    if(seen.has(k)) return false;
+    seen.add(k); return true;
+  });
   console.log("[공시지가] items[0]:", JSON.stringify(items[0]));
   const rows=items.map(it=>{
     // NED API 실제 필드명 (응답 확인 후 맞춤)
-    // NED API 실제 필드명: pblntfPclnd=공시지가(원/㎡), stdrYear=기준연도, ldCodeNm=지역명
+    // NED API 실제 필드명: pblntfPclnd=공시지가(원/㎡), stdrYear=기준연도, ldCodeNm=지역명, stdrMt=면적
     const price=parseInt(it.pblntfPclnd||it.pblntfPcInd||it.indvdLandPrice||it.pblntfPc||0);
     const year=it.stdrYear||"-";
     const addr=it.ldCodeNm||it.addr||"";
+    const area=parseFloat(it.stdrMt||it.area||0);
     if(!price) return "";
-    return `<div style="display:flex;gap:16px;align-items:baseline;padding:8px 0;border-bottom:1px solid #0f2035">
-      <span style="color:#60a5fa;font-size:13px;font-weight:600;min-width:45px">${year}년</span>
-      <span style="color:#10b981;font-weight:800;font-size:20px">${price.toLocaleString()}<span style="font-size:12px;font-weight:400;color:#4b6894">원/㎡</span></span>
-      ${addr?`<span style="color:#2d3f5e;font-size:11px">${addr}</span>`:""}
+    const total=area>0?Math.round(price*area):0;
+    return `<div style="padding:10px 0;border-bottom:1px solid #0f2035">
+      <div style="display:flex;gap:16px;align-items:baseline;margin-bottom:4px">
+        <span style="color:#60a5fa;font-size:13px;font-weight:600;min-width:45px">${year}년</span>
+        <span style="color:#10b981;font-weight:800;font-size:20px">${price.toLocaleString()}<span style="font-size:12px;font-weight:400;color:#4b6894">원/㎡</span></span>
+        ${area>0?`<span style="color:#4b6894;font-size:12px">${area.toFixed(0)}㎡</span>`:""}
+      </div>
+      ${total>0?`<div style="color:#dde3f0;font-size:13px;padding-left:53px">총 공시가격 <span style="color:#f59e0b;font-weight:700">${total.toLocaleString()}원</span> <span style="color:#2d3f5e;font-size:11px">(${area.toFixed(0)}㎡ × ${price.toLocaleString()}원)</span></div>`:""}
+      ${addr?`<div style="color:#2d3f5e;font-size:11px;padding-left:53px;margin-top:2px">${addr}</div>`:""}
     </div>`;
   }).filter(Boolean).join("");
 
