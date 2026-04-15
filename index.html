@@ -1640,8 +1640,7 @@ async function fetchGongsiJiga(){
   }
 
   // 번지 파싱
-  const jibunClean=_gongsiJibun.trim().replace(/\s+/g,"");
-  const jm=jibunClean.match(/^(\d+)(?:[-–](\d+))?$/);
+  const jm=_gongsiJibun.trim().match(/^(\d+)(?:[-–](\d+))?$/);
   if(!jm){
     resultEl.innerHTML='<span style="color:#f59e0b">⚠ 번지 형식 오류</span>';
     return;
@@ -1649,54 +1648,60 @@ async function fetchGongsiJiga(){
   const bun=jm[1]||"0";
   const ji=jm[2]||"0";
 
-  // 리 이름에서 리 코드 추론 (RI_MAP 역방향 조회는 어려우므로 대지=1, 임야=2 둘 다 시도)
-  const pnu1=buildPNU(f_sigunguCd, bjdongCd, 1, bun, ji); // 대지
-  const pnu2=buildPNU(f_sigunguCd, bjdongCd, 2, bun, ji); // 임야
-
   spinEl.style.display="inline-block";
   resultEl.innerHTML='<span style="color:#4b6894">조회 중…</span>';
 
-  async function queryPNU(pnu){
-    // vworld 개별공시지가 API
-    const url=`https://api.vworld.kr/req/data?service=data&request=GetFeature&data=LT_C_AISATPCE&key=${VWORLD_KEY}&attrFilter=pnu:=:${pnu}&category=개별공시지가&format=json&size=10`;
+  // 국가종점데이터 API (getIndvdLandPriceAttr)
+  // PNU: 시군구(5)+읍면동(3)+리(2)+대지구분(1)+본번(4)+부번(4) = 19자리
+  // 대지=1, 임야=2 둘 다 시도
+  const pnu1=buildPNU(f_sigunguCd, bjdongCd, 1, bun, ji);
+  const pnu2=buildPNU(f_sigunguCd, bjdongCd, 2, bun, ji);
+
+  async function queryNED(pnu){
+    const p=new URLSearchParams({
+      pnu, stdrYear:year, format:"json",
+      numOfRows:"10", pageNo:"1",
+      key:VWORLD_KEY, domain:"https://ikelly85.github.io"
+    });
     try{
-      const res=await fetch(url);
+      const res=await fetch(`https://api.vworld.kr/ned/data/getIndvdLandPriceAttr?${p}`);
       const json=await res.json();
-      const features=json?.response?.result?.featureCollection?.features||[];
-      console.log("[공시지가] PNU:", pnu, "features:", features.length, features[0]?.properties);
-      // 기준연도 필터
-      return features.filter(f=>{
-        const props=f.properties||{};
-        const yr=String(props.stdr_year||props.year||"");
-        return yr===String(year)||yr===""||features.length===1;
-      });
-    }catch(e){ return []; }
+      console.log("[공시지가] PNU:", pnu, JSON.stringify(json).slice(0,200));
+      // 응답 구조: json.landPriceAttr.field[] 또는 json.result
+      const items=json?.landPriceAttr?.field||json?.result?.items||[];
+      return Array.isArray(items)?items:(items?[items]:[]);
+    }catch(e){ console.error("[공시지가] 오류:", e); return []; }
   }
 
-  let features=await queryPNU(pnu1);
-  if(!features.length) features=await queryPNU(pnu2);
+  let items=await queryNED(pnu1);
+  if(!items.length) items=await queryNED(pnu2);
 
   spinEl.style.display="none";
 
-  if(!features.length){
-    // 직접 연도 필터 없이 전체 조회
-    const urlAll=`https://api.vworld.kr/req/data?service=data&request=GetFeature&data=LT_C_AISATPCE&key=${VWORLD_KEY}&attrFilter=pnu:=:${pnu1}&format=json&size=20`;
-    try{
-      const res=await fetch(urlAll);
-      const json=await res.json();
-      const all=json?.response?.result?.featureCollection?.features||[];
-      if(all.length){
-        // 최신 연도 표시
-        const sorted=all.sort((a,b)=>parseInt(b.properties?.stdr_year||0)-parseInt(a.properties?.stdr_year||0));
-        renderGongsiResult(sorted.slice(0,3), resultEl);
-        return;
-      }
-    }catch(e){}
-    resultEl.innerHTML=`<span style="color:#f59e0b">⚠ ${year}년 공시지가 데이터가 없습니다 <span style="font-size:10px;color:#2d3f5e">(PNU: ${pnu1})</span></span>`;
+  if(!items.length){
+    resultEl.innerHTML=`<div style="color:#f59e0b;padding:8px 0">⚠ ${year}년 공시지가 데이터가 없습니다<br><span style="font-size:11px;color:#2d3f5e">PNU: ${pnu1}</span></div>`;
     return;
   }
 
-  renderGongsiResult(features, resultEl);
+  renderGongsiNEDResult(items, resultEl);
+}
+
+function renderGongsiNEDResult(items, el){
+  const rows=items.map(it=>{
+    // 필드명 확인 후 파싱
+    const price=parseInt(it.indvdLandPrice||it.pblntfPc||it.land_prc||0);
+    const year=it.stdrYear||it.year||"-";
+    const addr=it.addr||it.landAddr||"-";
+    const area=parseFloat(it.ladUseSittn||it.area||0);
+    if(!price) return "";
+    return `<div style="display:flex;gap:16px;align-items:baseline;padding:8px 0;border-bottom:1px solid #0f2035">
+      <span style="color:#60a5fa;font-size:13px;font-weight:600;min-width:45px">${year}년</span>
+      <span style="color:#10b981;font-weight:800;font-size:20px">${price.toLocaleString()}<span style="font-size:12px;font-weight:400;color:#4b6894">원/㎡</span></span>
+      ${addr!=="-"?`<span style="color:#2d3f5e;font-size:11px">${addr}</span>`:""}
+    </div>`;
+  }).filter(Boolean).join("");
+
+  el.innerHTML=rows||'<div style="color:#f59e0b;padding:8px">⚠ 공시지가 정보를 파싱할 수 없습니다</div>';
 }
 
 function renderGongsiResult(features, el){
