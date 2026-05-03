@@ -52,4 +52,478 @@
   #progress-bar{height:100%;width:0%;background:linear-gradient(90deg,#3b82f6,#10b981);border-radius:2px;transition:width .3s}
   .load-status{margin-top:8px;font-size:11px;color:#2d3f5e;text-align:center;font-family:monospace}
   .month-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
-  .m-tab{padding:5px 12px;border:1px solid #182038;border-radius:20px;font-size:12
+  .m-tab{padding:5px 12px;border:1px solid #182038;border-radius:20px;font-size:12px;color:#3b5280;cursor:pointer;background:none;font-family:inherit;transition:all .15s;position:relative}
+  .m-tab:hover{border-color:#3b82f6;color:#93c5fd}
+  .m-tab.active{background:#1e3a5f;border-color:#3b82f6;color:#93c5fd;font-weight:700}
+  .m-tab.empty-tab{opacity:.3}
+  .m-tab .badge{position:absolute;top:-6px;right:-4px;background:#3b82f6;color:#fff;font-size:9px;border-radius:8px;padding:1px 5px;font-weight:700;line-height:1.4}
+  .stats-grid{display:none;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+  .stat-card{background:#0d1525;border:1px solid #182038;border-radius:12px;padding:12px 14px}
+  .stat-label{font-size:10px;color:#2d3f5e;font-weight:700;letter-spacing:.5px;margin-bottom:3px}
+  .stat-val{font-size:19px;font-weight:800;letter-spacing:-.5px}
+  .result-box{margin-top:10px;background:#0d1525;border:1px solid #182038;border-radius:14px;overflow:hidden;display:none}
+  .result-header{padding:10px 16px;border-bottom:1px solid #111928;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+  .result-meta{font-size:13px;color:#4b5e80}
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead tr{background:#080c14;color:#3b5280}
+  th{padding:9px 11px;font-weight:600;font-size:10px;letter-spacing:.5px;white-space:nowrap}
+  th.sort{cursor:pointer;user-select:none}
+  th.sort:hover{color:#93c5fd}
+  td{padding:9px 11px;border-top:1px solid #0f1828;transition:background .1s}
+  tbody tr:hover td{background:#0e1828}
+  .ta-r{text-align:right}
+  .ta-l{text-align:left}
+  .empty-state{padding:48px 0;text-align:center;color:#1e2c45;font-size:14px}
+  .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:#1e3a5f;border:1px solid #3b82f6;border-radius:10px;padding:10px 20px;font-size:13px;color:#93c5fd;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .fade-up{animation:fadeUp .25s ease}
+  @keyframes shimmer{0%,100%{opacity:.4}50%{opacity:.7}}
+  @media(max-width:900px){.fav-sidebar{display:none}.layout{display:block}}
+  @media(max-width:680px){.row1{grid-template-columns:1fr 1fr}.btn-search{grid-column:1/-1;width:100%}.row2{grid-template-columns:1fr 1fr}.stats-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🏢</div>
+  <div>
+    <div class="hd-title">아파트 실거래가 조회</div>
+    <div class="hd-sub">국토교통부 · 최근 12개월 자동 조회</div>
+  </div>
+  <button class="hd-fav-btn" onclick="toggleSidebar()" id="hd-fav-btn">
+    <span class="star">⭐</span> 즐겨찾기 <span id="fav-count-badge"></span>
+  </button>
+</header>
+
+<div class="layout">
+  <main>
+    <div class="search-card">
+      <div class="row1">
+        <div>
+          <label>시·구 선택 *</label>
+          <select id="sel-gu" onchange="onGuChange()">
+            <option value="">-- 구·시 선택 --</option>
+          </select>
+        </div>
+        <div>
+          <label>읍·면·동</label>
+          <select id="sel-dong" onchange="applyFilters('dong')" disabled>
+            <option value="">-- 전체 동 --</option>
+          </select>
+        </div>
+        <button class="btn-search" id="btn-search" onclick="doSearch()">새로고침</button>
+      </div>
+      <hr class="divider"/>
+      <div class="row2">
+        <div>
+          <label>단지명 필터</label>
+          <select id="sel-apt" onchange="applyFilters('apt')" disabled>
+            <option value="">-- 전체 단지 --</option>
+          </select>
+        </div>
+        <div>
+          <label>전용면적 필터</label>
+          <select id="sel-area" onchange="applyFilters('area')" disabled>
+            <option value="">-- 전체 면적 --</option>
+          </select>
+        </div>
+        <div>
+          <label>거래유형 필터</label>
+          <select id="sel-gbn" onchange="applyFilters('gbn')" disabled>
+            <option value="">-- 전체 --</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="error-box" id="error-box"></div>
+
+    <div id="loading-box">
+      <div class="loading-wrap">
+        <div class="loading-bar" style="width:100%"></div>
+        <div class="loading-bar" style="width:76%"></div>
+        <div class="loading-bar" style="width:88%"></div>
+      </div>
+      <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+      <div class="load-status" id="load-status">최근 12개월 데이터 불러오는 중…</div>
+    </div>
+
+    <div class="month-tabs" id="month-tabs" style="display:none"></div>
+
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card"><div class="stat-label">거래 건수</div><div class="stat-val" id="st-count" style="color:#3b82f6"></div></div>
+      <div class="stat-card"><div class="stat-label">중위가</div><div class="stat-val" id="st-median" style="color:#10b981"></div></div>
+      <div class="stat-card"><div class="stat-label">평균가</div><div class="stat-val" id="st-avg" style="color:#8b5cf6"></div></div>
+      <div class="stat-card"><div class="stat-label">최고가</div><div class="stat-val" id="st-max" style="color:#f59e0b"></div></div>
+    </div>
+
+    <div class="result-box" id="result-box">
+      <div class="result-header">
+        <span class="result-meta" id="result-meta"></span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button id="btn-add-fav" onclick="addFavorite()"
+            style="cursor:pointer;border:1px solid #182038;background:#0d1525;border-radius:8px;padding:5px 12px;color:#4b5e80;font-size:11px;font-family:inherit;display:flex;align-items:center;gap:5px;transition:all .15s"
+            onmouseover="this.style.borderColor='#f59e0b';this.style.color='#f59e0b'"
+            onmouseout="this.style.borderColor='#182038';this.style.color='#4b5e80'">
+            ⭐ 즐겨찾기 추가
+          </button>
+          <span style="font-size:10px;color:#1e2c45">국토교통부 실거래가 신고</span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="ta-l" style="padding-left:16px">단지명</th>
+              <th class="ta-l">동</th>
+              <th class="sort ta-r" onclick="toggleSort('area')">전용면적 <span id="arr-area">⇅</span></th>
+              <th class="ta-r">층</th>
+              <th class="ta-r">건축년도</th>
+              <th class="sort ta-r" onclick="toggleSort('price')" style="padding-right:16px">거래금액 <span id="arr-price">⇅</span></th>
+              <th class="sort ta-r" onclick="toggleSort('date')" style="padding-right:16px">거래일 <span id="arr-date">▼</span></th>
+              <th class="ta-r" style="padding-right:16px">거래유형</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <aside class="fav-sidebar" id="fav-sidebar">
+    <div class="fav-title">즐겨찾기 <span id="fav-count-text">0개</span></div>
+    <div id="fav-list"></div>
+  </aside>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SERVICE_KEY = "dacf12f15f16ec3ddbac6fcda43f12c93ec07fe731c89033f5fdcf2ba649bc04";
+const BASE_URL    = "https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev";
+const FAV_KEY     = "apt_favorites_v1";
+
+const GU_LIST = [
+  {g:"서울",n:"강남구",c:"11680"},{g:"서울",n:"강동구",c:"11740"},{g:"서울",n:"강북구",c:"11305"},
+  {g:"서울",n:"강서구",c:"11500"},{g:"서울",n:"관악구",c:"11620"},{g:"서울",n:"광진구",c:"11215"},
+  {g:"서울",n:"구로구",c:"11530"},{g:"서울",n:"금천구",c:"11545"},{g:"서울",n:"노원구",c:"11350"},
+  {g:"서울",n:"도봉구",c:"11320"},{g:"서울",n:"동대문구",c:"11230"},{g:"서울",n:"동작구",c:"11590"},
+  {g:"서울",n:"마포구",c:"11440"},{g:"서울",n:"서대문구",c:"11410"},{g:"서울",n:"서초구",c:"11650"},
+  {g:"서울",n:"성동구",c:"11200"},{g:"서울",n:"성북구",c:"11290"},{g:"서울",n:"송파구",c:"11710"},
+  {g:"서울",n:"양천구",c:"11470"},{g:"서울",n:"영등포구",c:"11560"},{g:"서울",n:"용산구",c:"11170"},
+  {g:"서울",n:"은평구",c:"11380"},{g:"서울",n:"종로구",c:"11110"},{g:"서울",n:"중구",c:"11140"},
+  {g:"서울",n:"중랑구",c:"11260"},
+  {g:"경기",n:"가평군",c:"41820"},{g:"경기",n:"고양시 덕양구",c:"41281"},{g:"경기",n:"고양시 일산동구",c:"41285"},
+  {g:"경기",n:"과천시",c:"41290"},{g:"경기",n:"구리시",c:"41310"},
+  {g:"경기",n:"고양시 일산서구",c:"41287"},{g:"경기",n:"광명시",c:"41210"},{g:"경기",n:"광주시",c:"41610"},
+  {g:"경기",n:"군포시",c:"41410"},{g:"경기",n:"김포시",c:"41570"},
+  {g:"경기",n:"남양주시",c:"41360"},{g:"경기",n:"동두천시",c:"41250"},{g:"경기",n:"부천시",c:"41190"},
+  {g:"경기",n:"성남시 분당구",c:"41135"},{g:"경기",n:"성남시 수정구",c:"41131"},{g:"경기",n:"성남시 중원구",c:"41133"},
+  {g:"경기",n:"수원시 권선구",c:"41113"},{g:"경기",n:"수원시 영통구",c:"41117"},{g:"경기",n:"수원시 장안구",c:"41111"},
+  {g:"경기",n:"수원시 팔달구",c:"41115"},{g:"경기",n:"시흥시",c:"41390"},{g:"경기",n:"안산시 단원구",c:"41273"},
+  {g:"경기",n:"안산시 상록구",c:"41271"},{g:"경기",n:"안성시",c:"41550"},{g:"경기",n:"안양시 동안구",c:"41173"},
+  {g:"경기",n:"안양시 만안구",c:"41171"},{g:"경기",n:"양주시",c:"41630"},{g:"경기",n:"여주시",c:"41670"},
+  {g:"경기",n:"오산시",c:"41370"},{g:"경기",n:"용인시 기흥구",c:"41463"},{g:"경기",n:"용인시 수지구",c:"41465"},
+  {g:"경기",n:"용인시 처인구",c:"41461"},{g:"경기",n:"의왕시",c:"41430"},{g:"경기",n:"의정부시",c:"41150"},
+  {g:"경기",n:"이천시",c:"41500"},{g:"경기",n:"파주시",c:"41480"},{g:"경기",n:"평택시",c:"41220"},
+  {g:"경기",n:"포천시",c:"41650"},{g:"경기",n:"하남시",c:"41450"},{g:"경기",n:"화성시",c:"41590"},
+  {g:"인천",n:"계양구",c:"28245"},{g:"인천",n:"남동구",c:"28200"},{g:"인천",n:"동구",c:"28140"},
+  {g:"인천",n:"미추홀구",c:"28177"},{g:"인천",n:"부평구",c:"28237"},{g:"인천",n:"서구",c:"28260"},
+  {g:"인천",n:"연수구",c:"28185"},{g:"인천",n:"중구",c:"28110"},
+  {g:"부산",n:"강서구",c:"26440"},{g:"부산",n:"금정구",c:"26410"},{g:"부산",n:"남구",c:"26290"},
+  {g:"부산",n:"동구",c:"26170"},{g:"부산",n:"동래구",c:"26260"},{g:"부산",n:"부산진구",c:"26230"},
+  {g:"부산",n:"북구",c:"26320"},{g:"부산",n:"사상구",c:"26530"},{g:"부산",n:"사하구",c:"26380"},
+  {g:"부산",n:"서구",c:"26140"},{g:"부산",n:"수영구",c:"26500"},{g:"부산",n:"연제구",c:"26470"},
+  {g:"부산",n:"영도구",c:"26200"},{g:"부산",n:"중구",c:"26110"},{g:"부산",n:"해운대구",c:"26350"},
+  {g:"대구",n:"달서구",c:"27290"},{g:"대구",n:"달성군",c:"27710"},{g:"대구",n:"동구",c:"27140"},
+  {g:"대구",n:"북구",c:"27230"},{g:"대구",n:"서구",c:"27170"},{g:"대구",n:"수성구",c:"27260"},{g:"대구",n:"중구",c:"27110"},
+  {g:"대전",n:"대덕구",c:"30230"},{g:"대전",n:"동구",c:"30110"},{g:"대전",n:"서구",c:"30170"},
+  {g:"대전",n:"유성구",c:"30200"},{g:"대전",n:"중구",c:"30140"},
+  {g:"광주",n:"광산구",c:"29200"},{g:"광주",n:"남구",c:"29155"},{g:"광주",n:"동구",c:"29110"},
+  {g:"광주",n:"북구",c:"29170"},{g:"광주",n:"서구",c:"29140"},
+  {g:"울산",n:"남구",c:"31140"},{g:"울산",n:"동구",c:"31170"},{g:"울산",n:"북구",c:"31200"},
+  {g:"울산",n:"울주군",c:"31710"},{g:"울산",n:"중구",c:"31110"},
+  {g:"세종",n:"세종시",c:"36110"},
+];
+
+let monthData={}, rawRows=[], activeYM="";
+let sortKey="date", sortDir="desc", maxPrice=0;
+let guName="", guCode="";
+let sidebarOpen=true;
+
+function loadFavs(){ try{ return JSON.parse(localStorage.getItem(FAV_KEY))||[]; }catch{ return []; } }
+function saveFavs(arr){ localStorage.setItem(FAV_KEY,JSON.stringify(arr)); }
+
+function currentFavObj(){
+  const dong=document.getElementById("sel-dong").value;
+  const apt=document.getElementById("sel-apt").value;
+  const area=document.getElementById("sel-area").value;
+  if(!guCode) return null;
+  return { id:Date.now(), guCode, guName, dong:dong||"", apt:apt||"", area:area||"", savedAt:new Date().toLocaleDateString("ko-KR") };
+}
+function favLabel(fav){ let p=[fav.guName]; if(fav.dong)p.push(fav.dong); if(fav.apt)p.push(fav.apt); return p.join(" · "); }
+function favSubLabel(fav){ return fav.area?`전용 ${fav.area}㎡ (${Math.round(parseFloat(fav.area)/3.305)}평)`:"전체 면적"; }
+
+function addFavorite(){
+  const fav=currentFavObj();
+  if(!fav){ showToast("먼저 구·시를 선택하고 검색해주세요"); return; }
+  if(!fav.apt&&!fav.dong){ showToast("단지 또는 동을 선택 후 즐겨찾기 추가해주세요"); return; }
+  const favs=loadFavs();
+  const dup=favs.find(f=>f.guCode===fav.guCode&&f.dong===fav.dong&&f.apt===fav.apt&&f.area===fav.area);
+  if(dup){ showToast("이미 즐겨찾기에 추가된 항목입니다 ⭐"); return; }
+  favs.unshift(fav); saveFavs(favs); renderFavList(); updateFavBadge();
+  showToast(`⭐ "${favLabel(fav)}" 즐겨찾기 추가!`);
+  if(!sidebarOpen) toggleSidebar();
+}
+function deleteFav(id){ saveFavs(loadFavs().filter(f=>f.id!==id)); renderFavList(); updateFavBadge(); }
+async function loadFav(fav){
+  document.getElementById("sel-gu").value=fav.guCode;
+  guCode=fav.guCode; guName=fav.guName;
+  showToast(`🔍 "${favLabel(fav)}" 불러오는 중…`);
+  await doSearch(fav);
+}
+function renderFavList(){
+  const favs=loadFavs();
+  const el=document.getElementById("fav-list");
+  if(!favs.length){ el.innerHTML=`<div class="fav-empty">⭐ 즐겨찾기가 없습니다<br><br>단지·동 필터 후<br>"즐겨찾기 추가" 버튼을 눌러보세요</div>`; return; }
+  el.innerHTML="";
+  favs.forEach(fav=>{
+    const item=document.createElement("div");
+    item.className="fav-item";
+    item.innerHTML=`<button class="fav-del" title="삭제">✕</button><div class="fav-item-name">${favLabel(fav)}</div><div class="fav-item-sub">${favSubLabel(fav)}</div><div class="fav-item-area">${fav.savedAt} 저장</div>`;
+    item.addEventListener("click",()=>loadFav(fav));
+    item.querySelector(".fav-del").addEventListener("click",e=>{ e.stopPropagation(); deleteFav(fav.id); });
+    el.appendChild(item);
+  });
+}
+function updateFavBadge(){
+  const cnt=loadFavs().length;
+  document.getElementById("fav-count-badge").textContent=cnt>0?`(${cnt})`:"";
+  document.getElementById("fav-count-text").textContent=`${cnt}개`;
+}
+function toggleSidebar(){ sidebarOpen=!sidebarOpen; document.getElementById("fav-sidebar").classList.toggle("hidden",!sidebarOpen); }
+
+let toastTimer;
+function showToast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),2400); }
+
+(function init(){
+  const selGu=document.getElementById("sel-gu");
+  let curGroup="",optGroup=null;
+  GU_LIST.forEach(({g,n,c})=>{
+    if(g!==curGroup){ curGroup=g; optGroup=document.createElement("optgroup"); optGroup.label=`── ${g} ──`; selGu.appendChild(optGroup); }
+    const opt=document.createElement("option"); opt.value=c; opt.textContent=n; opt.dataset.name=n; optGroup.appendChild(opt);
+  });
+  renderFavList(); updateFavBadge();
+})();
+
+function getLast12Months(){ return Array.from({length:12},(_,i)=>{ const d=new Date(); d.setDate(1); d.setMonth(d.getMonth()-i); return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}`; }); }
+function ymLabel(ym){ return `${ym.slice(0,4)}.${ym.slice(4)}`; }
+function formatPrice(raw){ const n=parseInt(String(raw||"0").replace(/,/g,""),10); if(!n||isNaN(n))return"-"; const uk=Math.floor(n/10000),man=n%10000; if(uk&&man)return`${uk}억 ${man.toLocaleString()}만`; if(uk)return`${uk}억`; return`${man.toLocaleString()}만`; }
+function toInt(raw){ return parseInt(String(raw||"0").replace(/,/g,""),10)||0; }
+function parseXML(xmlStr){ const doc=new DOMParser().parseFromString(xmlStr,"application/xml"); return Array.from(doc.querySelectorAll("item")).map(item=>{ const obj={}; item.childNodes.forEach(n=>{ if(n.nodeType===1)obj[n.tagName.trim()]=(n.textContent||"").trim(); }); return obj; }); }
+function showError(msg){ const el=document.getElementById("error-box"); el.style.display="block"; el.innerHTML=`⚠ ${msg}`; }
+
+function onGuChange(){
+  const selGu=document.getElementById("sel-gu");
+  guCode=selGu.value;
+  guName=selGu.options[selGu.selectedIndex]?.dataset?.name||"";
+  if(!guCode) return;
+  document.getElementById("sel-dong").innerHTML='<option value="">-- 전체 동 --</option>';
+  document.getElementById("sel-dong").disabled=true;
+  resetFilters(); resetResult();
+  doSearch();
+}
+function resetFilters(){ ["sel-apt","sel-area","sel-gbn"].forEach(id=>{ const el=document.getElementById(id); el.innerHTML=`<option value="">-- ${id==="sel-apt"?"전체 단지":id==="sel-area"?"전체 면적":"전체"} --</option>`; el.disabled=true; }); }
+function resetResult(){ ["stats-grid","result-box","error-box","month-tabs"].forEach(id=>{ const el=document.getElementById(id); el.style.display="none"; if(id==="month-tabs")el.innerHTML=""; }); }
+
+async function doSearch(favToRestore){
+  const selGu=document.getElementById("sel-gu");
+  if(!guCode){ guCode=selGu.value; guName=selGu.options[selGu.selectedIndex]?.dataset?.name||""; }
+  if(!guCode){ showError("구·시를 선택해주세요"); return; }
+  resetResult(); resetFilters();
+  monthData={}; rawRows=[]; activeYM="";
+  document.getElementById("loading-box").style.display="block";
+  document.getElementById("progress-bar").style.width="0%";
+  document.getElementById("btn-search").disabled=true;
+  document.getElementById("btn-search").textContent="불러오는 중…";
+  document.getElementById("error-box").style.display="none";
+  const months=getLast12Months();
+  let done=0;
+  function updateProgress(){ done++; document.getElementById("progress-bar").style.width=Math.round(done/months.length*100)+"%"; document.getElementById("load-status").textContent=`최근 12개월 불러오는 중… (${done}/${months.length})`; }
+  await Promise.all(months.map(async ym=>{
+    try{
+      const params=new URLSearchParams({serviceKey:SERVICE_KEY,LAWD_CD:guCode,DEAL_YMD:ym,pageNo:"1",numOfRows:"1000"});
+      const res=await fetch(`${BASE_URL}?${params}`);
+      if(!res.ok) throw new Error();
+      const xml=await res.text();
+      monthData[ym]=xml.includes("SERVICE_KEY_IS_NOT_REGISTERED_ERROR")?[]:parseXML(xml);
+    }catch{ monthData[ym]=[]; }
+    updateProgress();
+  }));
+  document.getElementById("loading-box").style.display="none";
+  document.getElementById("btn-search").disabled=false;
+  document.getElementById("btn-search").textContent="새로고침";
+  const total=Object.values(monthData).reduce((s,a)=>s+a.length,0);
+  if(total===0){ showError("CORS 오류: Chrome 확장 <b style='color:#93c5fd'>CORS Unblock</b>을 설치·활성화 후 재시도해주세요."); return; }
+  const allRows=Object.values(monthData).flat();
+  const dongs=[...new Set(allRows.map(it=>(it["umdNm"]||"").trim()).filter(Boolean))].sort();
+  const selDong=document.getElementById("sel-dong");
+  selDong.innerHTML='<option value="">-- 전체 동 --</option>';
+  dongs.forEach(d=>{ const o=document.createElement("option"); o.value=d; o.textContent=d; selDong.appendChild(o); });
+  selDong.disabled=false;
+  renderMonthTabs();
+  const firstYM=months.find(ym=>monthData[ym]?.length>0)||months[0];
+  selectMonth(firstYM,favToRestore);
+  if(!favToRestore) setTimeout(()=>document.getElementById("sel-dong").focus(),50);
+}
+
+function renderMonthTabs(){
+  const months=getLast12Months();
+  const tabsEl=document.getElementById("month-tabs");
+  tabsEl.innerHTML=""; tabsEl.style.display="flex";
+  months.forEach(ym=>{
+    const btn=document.createElement("button");
+    btn.className="m-tab"+(monthData[ym]?.length===0?" empty-tab":"");
+    btn.dataset.ym=ym; btn.onclick=()=>selectMonth(ym);
+    const cnt=monthData[ym]?.length||0;
+    btn.textContent=ymLabel(ym);
+    if(cnt>0){ const b=document.createElement("span"); b.className="badge"; b.textContent=cnt>999?"999+":cnt; btn.appendChild(b); }
+    tabsEl.appendChild(btn);
+  });
+}
+
+function selectMonth(ym,favToRestore){
+  activeYM=ym;
+  document.querySelectorAll(".m-tab").forEach(btn=>btn.classList.toggle("active",btn.dataset.ym===ym));
+  rawRows=monthData[ym]||[];
+  buildFilterOptions(rawRows);
+  if(favToRestore){
+    if(favToRestore.dong) document.getElementById("sel-dong").value=favToRestore.dong;
+    applyFilters("dong");
+    if(favToRestore.apt) document.getElementById("sel-apt").value=favToRestore.apt;
+    applyFilters("apt");
+    if(favToRestore.area) document.getElementById("sel-area").value=favToRestore.area;
+    applyFilters("area");
+  } else {
+    applyFilters("init");
+  }
+}
+
+function buildFilterOptions(rows){
+  const dong=document.getElementById("sel-dong").value;
+  const base=dong?rows.filter(it=>(it["umdNm"]||"").trim()===dong):rows;
+  const apts=[...new Set(base.map(it=>(it["aptNm"]||"").trim()).filter(Boolean))].sort();
+  const selApt=document.getElementById("sel-apt");
+  selApt.innerHTML='<option value="">-- 전체 단지 --</option>';
+  apts.forEach(a=>{ const o=document.createElement("option"); o.value=a; o.textContent=a; selApt.appendChild(o); });
+  selApt.disabled=false;
+  document.getElementById("sel-area").innerHTML='<option value="">-- 전체 면적 --</option>';
+  document.getElementById("sel-area").disabled=false;
+  const gbns=[...new Set(rows.map(it=>(it["dealingGbn"]||"").trim()).filter(Boolean))].sort();
+  const selGbn=document.getElementById("sel-gbn");
+  selGbn.innerHTML='<option value="">-- 전체 --</option>';
+  gbns.forEach(g=>{ const o=document.createElement("option"); o.value=g; o.textContent=g; selGbn.appendChild(o); });
+  selGbn.disabled=gbns.length===0;
+}
+
+function rebuildAreaOptions(rows,currentArea){
+  const areas=[...new Set(rows.map(it=>{ const v=parseFloat(it["excluUseAr"]||0); return v>0?v.toFixed(1):null; }).filter(Boolean))].sort((a,b)=>parseFloat(a)-parseFloat(b));
+  const selArea=document.getElementById("sel-area");
+  selArea.innerHTML='<option value="">-- 전체 면적 --</option>';
+  areas.forEach(a=>{ const o=document.createElement("option"); o.value=a; o.textContent=`${a}㎡  (${Math.round(parseFloat(a)/3.305)}평)`; if(a===currentArea)o.selected=true; selArea.appendChild(o); });
+  selArea.disabled=areas.length===0;
+  if(currentArea&&!areas.includes(currentArea)) selArea.value="";
+}
+
+function rebuildAptOptions(rows,currentApt){
+  const apts=[...new Set(rows.map(it=>(it["aptNm"]||"").trim()).filter(Boolean))].sort();
+  const selApt=document.getElementById("sel-apt");
+  selApt.innerHTML='<option value="">-- 전체 단지 --</option>';
+  apts.forEach(a=>{ const o=document.createElement("option"); o.value=a; o.textContent=a; if(a===currentApt)o.selected=true; selApt.appendChild(o); });
+  selApt.disabled=false;
+  if(currentApt&&!apts.includes(currentApt)) selApt.value="";
+}
+
+function applyFilters(changedBy){
+  const dong=document.getElementById("sel-dong").value;
+  const apt=document.getElementById("sel-apt").value;
+  const area=document.getElementById("sel-area").value;
+  const gbn=document.getElementById("sel-gbn").value;
+  const byDong=dong?rawRows.filter(it=>(it["umdNm"]||"").trim()===dong):rawRows;
+  if(changedBy==="dong") rebuildAptOptions(byDong,apt);
+  const currentApt=document.getElementById("sel-apt").value;
+  const byDongApt=currentApt?byDong.filter(it=>(it["aptNm"]||"").trim()===currentApt):byDong;
+  if(changedBy==="dong"||changedBy==="apt"||changedBy==="init") rebuildAreaOptions(byDongApt,area);
+  const currentArea=document.getElementById("sel-area").value;
+  let rows=byDongApt;
+  if(currentArea) rows=rows.filter(it=>parseFloat(it["excluUseAr"]||0).toFixed(1)===currentArea);
+  if(gbn) rows=rows.filter(it=>(it["dealingGbn"]||"").trim()===gbn);
+  renderStats(rows);
+  renderTable(rows);
+  document.getElementById("result-box").style.display="block";
+}
+
+function renderStats(rows){
+  const prices=rows.map(it=>toInt(it["dealAmount"])).filter(p=>p>0).sort((a,b)=>a-b);
+  const grid=document.getElementById("stats-grid");
+  if(!prices.length){ grid.style.display="none"; return; }
+  maxPrice=prices[prices.length-1];
+  document.getElementById("st-count").textContent=`${rows.length.toLocaleString()}건`;
+  document.getElementById("st-median").textContent=formatPrice(prices[Math.floor(prices.length/2)]);
+  document.getElementById("st-avg").textContent=formatPrice(Math.round(prices.reduce((s,p)=>s+p,0)/prices.length));
+  document.getElementById("st-max").textContent=formatPrice(maxPrice);
+  grid.style.display="grid";
+  const dong=document.getElementById("sel-dong").value;
+  const apt=document.getElementById("sel-apt").value;
+  const area=document.getElementById("sel-area").value;
+  let label=`<b style="color:#dde3f0">${guName}</b>`;
+  if(dong) label+=` · <span style="color:#60a5fa">${dong}</span>`;
+  if(apt)  label+=` · <span style="color:#60a5fa">${apt}</span>`;
+  if(area) label+=` · <span style="color:#60a5fa">${area}㎡</span>`;
+  if(activeYM) label+=` · <span style="color:#4b5e80">${ymLabel(activeYM)}</span>`;
+  label+=` → <span style="color:#10b981;font-weight:700">${rows.length}건</span>`;
+  document.getElementById("result-meta").innerHTML=label;
+}
+
+function renderTable(rows){
+  const sorted=[...rows].sort((a,b)=>{
+    let va,vb;
+    if(sortKey==="price"){ va=toInt(a["dealAmount"]); vb=toInt(b["dealAmount"]); }
+    else if(sortKey==="area"){ va=parseFloat(a["excluUseAr"]||0); vb=parseFloat(b["excluUseAr"]||0); }
+    else{ va=`${a["dealYear"]||""}${String(a["dealMonth"]||"").padStart(2,"0")}${String(a["dealDay"]||"").padStart(2,"0")}`; vb=`${b["dealYear"]||""}${String(b["dealMonth"]||"").padStart(2,"0")}${String(b["dealDay"]||"").padStart(2,"0")}`; }
+    if(typeof va==="number") return sortDir==="desc"?vb-va:va-vb;
+    return sortDir==="desc"?vb.localeCompare(va):va.localeCompare(vb);
+  });
+  const tbody=document.getElementById("tbody");
+  if(!sorted.length){ tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state">🔍<br>해당 조건의 거래 내역이 없습니다</div></td></tr>`; return; }
+  tbody.innerHTML=sorted.map(it=>{
+    const price=toInt(it["dealAmount"]);
+    const pct=maxPrice?price/maxPrice:0;
+    const col=pct>.85?"#f59e0b":pct>.55?"#3b82f6":"#4b6894";
+    const area=parseFloat(it["excluUseAr"]||0);
+    const pyeong=area>0?Math.round(area/3.305):0;
+    const dateStr=it["dealYear"]?`${it["dealYear"]}.${String(it["dealMonth"]||"").padStart(2,"0")}.${String(it["dealDay"]||"").padStart(2,"0")}`:"-";
+    const gbn=(it["dealingGbn"]||"").trim();
+    return `<tr>
+      <td style="padding:9px 16px;font-weight:600;color:#c4cedf;white-space:nowrap">${it["aptNm"]||"-"}</td>
+      <td style="color:#3b5280;font-size:12px;white-space:nowrap">${it["umdNm"]||"-"}</td>
+      <td class="ta-r" style="color:#4b6894;white-space:nowrap">${area>0?area.toFixed(1)+"㎡":"-"}${pyeong>0?`<span style="font-size:10px;color:#2d3f5e;margin-left:3px">${pyeong}평</span>`:""}</td>
+      <td class="ta-r" style="color:#3b5280">${it["floor"]?it["floor"]+"층":"-"}</td>
+      <td class="ta-r" style="color:#2d3f5e;font-size:12px">${it["buildYear"]||"-"}</td>
+      <td class="ta-r" style="padding-right:14px;font-weight:800;font-size:15px;color:${col};letter-spacing:-.3px;white-space:nowrap">${formatPrice(it["dealAmount"])}</td>
+      <td class="ta-r" style="padding-right:14px;color:#2d3f5e;font-size:11px;font-family:monospace;white-space:nowrap">${dateStr}</td>
+      <td class="ta-r" style="padding-right:14px;font-size:11px;color:${gbn==="직거래"?"#f97316":"#2d3f5e"}">${gbn||"-"}</td>
+    </tr>`;
+  }).join("");
+}
+
+function toggleSort(key){
+  if(sortKey===key) sortDir=sortDir==="desc"?"asc":"desc"; else{ sortKey=key; sortDir="desc"; }
+  ["area","price","date"].forEach(k=>{ const el=document.getElementById(`arr-${k}`); if(el)el.textContent=sortKey===k?(sortDir==="desc"?"▼":"▲"):"⇅"; });
+  applyFilters("sort");
+}
+</script>
+</body>
+</html>
